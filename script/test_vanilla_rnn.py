@@ -148,6 +148,9 @@ def train_model(recurrent_model,
             grad_clip   = 0.0
 
             # update model
+            print 'input_seq.shape : ', input_seq.shape
+            print 'mask_seq.shape : ', mask_seq.shape
+            print 'target_seq.shape : ', target_seq.shape
             update_input  = [input_seq, mask_seq, target_seq, grad_clip]
             update_output = update_function(*update_input)
 

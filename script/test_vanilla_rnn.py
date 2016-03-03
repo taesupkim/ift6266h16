@@ -155,14 +155,14 @@ def train_model(recurrent_model,
             # hidden_seq  = update_output[0].swapaxes()
             # output_seq  = update_output[1].swapaxes(axis1=0, axis2=1)
             sample_cost = update_output[2]
-            print sample_cost
+            print e, batch_idx, sample_cost
 
 
 
 if __name__=="__main__":
     window_size   = 100
     hidden_size   = 10
-    learning_rate = 1e-2
+    learning_rate = 1e-3
 
     model_name = 'vanilla_rnn_' \
                  + '_WINDOW{}'.format(int(window_size)) \

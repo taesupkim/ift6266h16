@@ -69,13 +69,13 @@ def set_update_function(recurrent_model,
     recurrent_updates_dict = get_model_updates(layers=recurrent_model,
                                                cost=recurrent_cost,
                                                optimizer=recurrent_optimizer,
-                                               use_grad_clip=0.0)
+                                               use_grad_clip=1.0)
 
     output_cost         = sample_cost.mean()
     output_updates_dict = get_model_updates(layers=output_model,
                                             cost=output_cost,
                                             optimizer=output_optimizer,
-                                            use_grad_clip=0.0)
+                                            use_grad_clip=1.0)
 
     update_function_inputs  = [input_seq,
                                target_seq,
@@ -156,13 +156,13 @@ def train_model(recurrent_model,
             # output_seq  = update_output[1].swapaxes(axis1=0, axis2=1)
             sample_cost = update_output[2]
             print e, batch_idx, sample_cost
-            print 'target  : ', target_seq.transpose()
-            print 'predict : ', update_output[1].transpose()
+            # print 'target  : ', target_seq.transpose()
+            # print 'predict : ', update_output[1].transpose()
 
 
 
 if __name__=="__main__":
-    window_size   = 5
+    window_size   = 100
     hidden_size   = 100
     learning_rate = 1e-3
 

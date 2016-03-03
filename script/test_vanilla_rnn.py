@@ -4,7 +4,7 @@ import numpy
 from theano import tensor
 from data.window import Window
 from layer.layers import LinearLayer, RecurrentLayer
-from layer.layer_utils import get_model_outputs, get_model_updates
+from layer.layer_utils import get_tensor_output, get_model_updates
 from utils.utils import merge_dicts
 from optimizer.rmsprop import RmsProp
 from numpy.random import RandomState
@@ -58,9 +58,9 @@ def set_update_function(recurrent_model,
     grad_clip = tensor.scalar(name='grad_clip', dtype=floatX)
 
     # get hidden data
-    hidden_seq = get_model_outputs(input=[input_seq, mask_seq], layers=recurrent_model, is_training=True)[-1]
+    hidden_seq = get_tensor_output(input=[input_seq, mask_seq], layers=recurrent_model, is_training=True)
     # get prediction data
-    output_seq = get_model_outputs(input=hidden_seq, layers=output_model, is_training=True)[-1]
+    output_seq = get_tensor_output(input=hidden_seq, layers=output_model, is_training=True)
 
     # get cost (here mask_seq is like weight, sum over feature)
     sequence_cost = tensor.sqr(output_seq-target_seq)*mask_seq.dimshuffle(0, 1, 'x')
@@ -101,9 +101,9 @@ def set_generation_function(recurrent_model, output_model):
     prev_hidden_data = tensor.matrix(name='prev_hidden_data', dtype=floatX)
 
     # get hidden data
-    cur_hidden_data = get_model_outputs(input=[input_data, prev_hidden_data], layers=recurrent_model, is_training=False)
+    cur_hidden_data = get_tensor_output(input=[input_data, prev_hidden_data], layers=recurrent_model, is_training=False)
     # get prediction data
-    output_data = get_model_outputs(input=cur_hidden_data, layers=output_model, is_training=False)
+    output_data = get_tensor_output(input=cur_hidden_data, layers=output_model, is_training=False)
 
     # input data
     generation_function_inputs  = [input_data,

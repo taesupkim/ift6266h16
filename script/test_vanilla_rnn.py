@@ -10,6 +10,7 @@ from utils.utils import merge_dicts
 from optimizer.rmsprop import RmsProp
 from numpy.random import RandomState
 from theano.sandbox.rng_mrg import MRG_RandomStreams
+from utils.display import plot_learning_curve
 theano_rng = MRG_RandomStreams(42)
 np_rng = RandomState(42)
 
@@ -132,6 +133,7 @@ def train_model(recurrent_model,
                                                   output_model=output_model)
 
 
+    cost_list = []
     for e in xrange(num_epochs):
         data_iterator = data_stream.get_epoch_iterator()
         for batch_idx, batch_data in enumerate(data_iterator):
@@ -159,12 +161,17 @@ def train_model(recurrent_model,
             # update result
             # hidden_seq  = update_output[0].swapaxes()
             # output_seq  = update_output[1].swapaxes(axis1=0, axis2=1)
-            sample_cost = update_output[2]
+            sample_cost = update_output[2].mean()
             print e, batch_idx, sample_cost
             # print 'target  : ', target_seq.transpose()
             # print 'predict : ', update_output[1].transpose()
+            cost_list.append(sample_cost)
 
-
+            if (batch_idx+1)%100==0:
+                plot_learning_curve(cost_values=[cost_list,],
+                                    cost_names=['Input cost (train)',],
+                                    save_as=model_name+'.png',
+                                    legend_pos='upper left')
 
 if __name__=="__main__":
     window_size   = 100

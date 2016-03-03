@@ -58,9 +58,9 @@ def set_update_function(recurrent_model,
     grad_clip = tensor.scalar(name='grad_clip', dtype=floatX)
 
     # get hidden data
-    hidden_seq = get_model_outputs(input=[input_seq, mask_seq], layers=recurrent_model, is_training=True)
+    hidden_seq = get_model_outputs(input=[input_seq, mask_seq], layers=recurrent_model, is_training=True)[-1]
     # get prediction data
-    output_seq = get_model_outputs(input=hidden_seq, layers=output_model, is_training=True)
+    output_seq = get_model_outputs(input=hidden_seq, layers=output_model, is_training=True)[-1]
 
     # get cost (here mask_seq is like weight, sum over feature)
     sequence_cost = tensor.sqr(output_seq-target_seq)*mask_seq.dimshuffle(0, 1, 'x')

@@ -49,8 +49,6 @@ def set_update_function(recurrent_model,
                         output_optimizer):
     # set input data (time_step*num_samples*features)
     input_seq   = tensor.tensor3(name='input_seq', dtype=floatX)
-    # set mask data (time_step*num_samples)
-    mask_seq    = tensor.matrix(name='mask_seq', dtype=floatX)
     # set target data (time_step*num_samples*output_size)
     target_seq  = tensor.tensor3(name='target_seq', dtype=floatX)
 
@@ -58,12 +56,12 @@ def set_update_function(recurrent_model,
     grad_clip = tensor.scalar(name='grad_clip', dtype=floatX)
 
     # get hidden data
-    hidden_seq = get_tensor_output(input=[input_seq, mask_seq], layers=recurrent_model, is_training=True)
+    hidden_seq = get_tensor_output(input=[input_seq,], layers=recurrent_model, is_training=True)
     # get prediction data
     output_seq = get_tensor_output(input=hidden_seq, layers=output_model, is_training=True)
 
     # get cost (here mask_seq is like weight, sum over feature)
-    sequence_cost = tensor.sqr(output_seq-target_seq)*mask_seq.dimshuffle(0, 1, 'x')
+    sequence_cost = tensor.sqr(output_seq-target_seq)
     sample_cost   = tensor.sum(sequence_cost, axis=(0, 2))
 
     # get model updates
@@ -80,7 +78,6 @@ def set_update_function(recurrent_model,
                                             use_grad_clip=grad_clip)
 
     update_function_inputs  = [input_seq,
-                               mask_seq,
                                target_seq,
                                grad_clip]
     update_function_outputs = [hidden_seq,
@@ -152,7 +149,7 @@ def train_model(recurrent_model,
             print 'mask_seq.shape : ', mask_seq.shape
             print 'target_seq.shape : ', target_seq.shape
             raw_input()
-            update_input  = [input_seq, mask_seq, target_seq, grad_clip]
+            update_input  = [input_seq, target_seq, grad_clip]
             update_output = update_function(*update_input)
 
             # update result

@@ -1,14 +1,12 @@
 __author__ = 'KimTS'
-import sys
-sys.path.append('/u/kimtaesu/workspace/tsdll')
 import theano
 import numpy
 from theano import tensor
 from data.window import Window
-from tsdll.layer.layers import LinearLayer, RecurrentLayer
-from tsdll.layer.layer_utils import get_model_outputs, get_model_updates
-from tsdll.utils.utils import merge_dicts
-from tsdll.optimizer.rmsprop import RmsProp
+from layer.layers import LinearLayer, RecurrentLayer
+from layer.layer_utils import get_model_outputs, get_model_updates
+from utils.utils import merge_dicts
+from optimizer.rmsprop import RmsProp
 from numpy.random import RandomState
 from theano.sandbox.rng_mrg import MRG_RandomStreams
 theano_rng = MRG_RandomStreams(42)

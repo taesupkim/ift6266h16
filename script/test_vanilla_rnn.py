@@ -3,6 +3,7 @@ import theano
 import numpy
 from theano import tensor
 from data.window import Window
+from layer.activations import Tanh
 from layer.layers import LinearLayer, RecurrentLayer
 from layer.layer_utils import get_tensor_output, get_model_updates
 from utils.utils import merge_dicts
@@ -29,6 +30,7 @@ def set_output_model(input_size, output_size):
     layers.append(LinearLayer(input_dim=input_size,
                               output_dim=output_size,
                               name='output_layer'))
+    layers.append(Tanh(name='output_squeeze_layer'))
     return layers
 
 def set_datastream(window_size=100,

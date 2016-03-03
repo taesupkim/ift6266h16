@@ -156,8 +156,8 @@ def train_model(recurrent_model,
             # output_seq  = update_output[1].swapaxes(axis1=0, axis2=1)
             sample_cost = update_output[2]
             print e, batch_idx, sample_cost
-            print 'input  : ', update_output[0].transpose
-            print 'target : ', update_output[1].transpose
+            print 'input  : ', update_output[0].transpose()
+            print 'target : ', update_output[1].transpose()
 
 
 

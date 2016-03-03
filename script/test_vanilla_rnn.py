@@ -153,8 +153,8 @@ def train_model(recurrent_model,
             update_output = update_function(*update_input)
 
             # update result
-            hidden_seq  = update_output[0].swapaxes(axis1=0, axis2=1)
-            output_seq  = update_output[1].swapaxes(axis1=0, axis2=1)
+            # hidden_seq  = update_output[0].swapaxes()
+            # output_seq  = update_output[1].swapaxes(axis1=0, axis2=1)
             sample_cost = update_output[2]
 
             print sample_cost

@@ -157,6 +157,7 @@ def train_model(recurrent_model,
             sample_cost = update_output[2]
 
             print sample_cost
+            raw_input()
 
 
 

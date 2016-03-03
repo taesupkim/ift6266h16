@@ -54,11 +54,11 @@ def set_update_function(recurrent_model,
     # set target data (time_step*num_samples*output_size)
     target_seq  = tensor.tensor3(name='target_seq', dtype=floatX)
 
-    # grad clip
-    grad_clip = tensor.scalar(name='grad_clip', dtype=floatX)
+    # truncate grad
+    truncate_grad_step = tensor.scalar(name='truncate_grad_step', dtype=floatX)
 
     # get hidden data
-    hidden_seq = get_tensor_output(input=[input_seq,], layers=recurrent_model, is_training=True)
+    hidden_seq = get_tensor_output(input=[input_seq, None, None, truncate_grad_step], layers=recurrent_model, is_training=True)
     # get prediction data
     output_seq = get_tensor_output(input=hidden_seq, layers=output_model, is_training=True)
 
@@ -81,7 +81,7 @@ def set_update_function(recurrent_model,
 
     update_function_inputs  = [input_seq,
                                target_seq,
-                               grad_clip]
+                               truncate_grad_step]
     update_function_outputs = [hidden_seq,
                                output_seq,
                                sample_cost]
@@ -147,16 +147,13 @@ def train_model(recurrent_model,
             input_seq  = (input_seq/(2.**15)).astype(floatX)
             target_seq = (target_seq/(2.**15)).astype(floatX)
 
-
-
-            mask_seq    = numpy.ones(shape=(input_seq.shape[1], input_seq.shape[0]), dtype=floatX)
-            grad_clip   = 0.0
+            truncate_grad_step = -1
 
             # update model
             # print 'input_seq.shape : ', input_seq.shape
             # print 'mask_seq.shape : ', mask_seq.shape
             # print 'target_seq.shape : ', target_seq.shape
-            update_input  = [input_seq, target_seq, grad_clip]
+            update_input  = [input_seq, target_seq, truncate_grad_step]
             update_output = update_function(*update_input)
 
             # update result

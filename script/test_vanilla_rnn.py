@@ -134,7 +134,6 @@ def train_model(recurrent_model,
         data_iterator = data_stream.get_epoch_iterator()
         for batch_idx, batch_data in enumerate(data_iterator):
             if numpy.ndim(batch_data[0])==2:
-                print batch_data[0].dtype
                 input_seq  = numpy.expand_dims(batch_data[0], axis=0)
                 input_seq  = numpy.swapaxes(input_seq, axis1=0, axis2=1)
                 target_seq = numpy.expand_dims(batch_data[1], axis=0)
@@ -142,6 +141,11 @@ def train_model(recurrent_model,
             else:
                 input_seq  = numpy.swapaxes(batch_data[0], axis1=0, axis2=1)
                 target_seq = numpy.swapaxes(batch_data[1], axis1=0, axis2=1)
+
+            input_seq  = input_seq/(2.**15)
+            target_seq = target_seq/(2.**15)
+
+
             mask_seq    = numpy.ones(shape=(input_seq.shape[1], input_seq.shape[0]), dtype=floatX)
             grad_clip   = 0.0
 

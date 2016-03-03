@@ -148,7 +148,6 @@ def train_model(recurrent_model,
             print 'input_seq.shape : ', input_seq.shape
             print 'mask_seq.shape : ', mask_seq.shape
             print 'target_seq.shape : ', target_seq.shape
-            raw_input()
             update_input  = [input_seq, target_seq, grad_clip]
             update_output = update_function(*update_input)
 
@@ -156,10 +155,7 @@ def train_model(recurrent_model,
             # hidden_seq  = update_output[0].swapaxes()
             # output_seq  = update_output[1].swapaxes(axis1=0, axis2=1)
             sample_cost = update_output[2]
-
-            print type(update_output[0])
             print sample_cost
-            raw_input()
 
 
 

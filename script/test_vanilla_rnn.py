@@ -69,13 +69,13 @@ def set_update_function(recurrent_model,
     recurrent_updates_dict = get_model_updates(layers=recurrent_model,
                                                cost=recurrent_cost,
                                                optimizer=recurrent_optimizer,
-                                               use_grad_clip=grad_clip)
+                                               use_grad_clip=0.0)
 
     output_cost         = sample_cost.mean()
     output_updates_dict = get_model_updates(layers=output_model,
                                             cost=output_cost,
                                             optimizer=output_optimizer,
-                                            use_grad_clip=grad_clip)
+                                            use_grad_clip=0.0)
 
     update_function_inputs  = [input_seq,
                                target_seq,

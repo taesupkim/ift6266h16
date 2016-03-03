@@ -142,17 +142,18 @@ def train_model(recurrent_model,
                 input_seq  = numpy.swapaxes(batch_data[0], axis1=0, axis2=1)
                 target_seq = numpy.swapaxes(batch_data[1], axis1=0, axis2=1)
 
-            input_seq  = input_seq/(2.**15)
-            target_seq = target_seq/(2.**15)
+            input_seq  = (input_seq/(2.**15)).astype(floatX)
+            target_seq = (target_seq/(2.**15)).astype(floatX)
+
 
 
             mask_seq    = numpy.ones(shape=(input_seq.shape[1], input_seq.shape[0]), dtype=floatX)
             grad_clip   = 0.0
 
             # update model
-            print 'input_seq.shape : ', input_seq.shape
-            print 'mask_seq.shape : ', mask_seq.shape
-            print 'target_seq.shape : ', target_seq.shape
+            # print 'input_seq.shape : ', input_seq.shape
+            # print 'mask_seq.shape : ', mask_seq.shape
+            # print 'target_seq.shape : ', target_seq.shape
             update_input  = [input_seq, target_seq, grad_clip]
             update_output = update_function(*update_input)
 
@@ -160,7 +161,7 @@ def train_model(recurrent_model,
             # hidden_seq  = update_output[0].swapaxes()
             # output_seq  = update_output[1].swapaxes(axis1=0, axis2=1)
             sample_cost = update_output[2]
-            # print e, batch_idx, sample_cost
+            print e, batch_idx, sample_cost
             # print 'target  : ', target_seq.transpose()
             # print 'predict : ', update_output[1].transpose()
 

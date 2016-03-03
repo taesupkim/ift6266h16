@@ -1,4 +1,6 @@
 __author__ = 'KimTS'
+import sys
+sys.path.append('/u/kimtaesu/workspace/tsdll')
 import theano
 import numpy
 from theano import tensor

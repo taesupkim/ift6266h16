@@ -170,7 +170,7 @@ if __name__=="__main__":
     batch_size    = 64
     learning_rate = 1e-5
 
-    data_path  = '/data/lisatmp4/taesup/data/YouTubeAudio/{}{}.hdf5'.format(youtube_id, window_size)
+    data_path  = '/data/lisatmp4/taesup/data/YouTubeAudio/{}_{}.hdf5'.format(youtube_id, window_size)
     model_name = 'vanilla_rnn_' \
                  + '_WINDOW{}'.format(int(window_size)) \
                  + '_HIDDEN{}'.format(int(hidden_size)) \

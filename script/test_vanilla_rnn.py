@@ -149,7 +149,7 @@ def train_model(recurrent_model,
             input_seq  = (input_seq/(2.**15)).astype(floatX)
             target_seq = (target_seq/(2.**15)).astype(floatX)
 
-            truncate_grad_step = -1
+            truncate_grad_step = 100
 
             # update model
             # print 'input_seq.shape : ', input_seq.shape

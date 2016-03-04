@@ -163,8 +163,8 @@ def train_model(recurrent_model,
             # output_seq  = update_output[1].swapaxes(axis1=0, axis2=1)
             sample_cost = update_output[2].mean()
             print e, batch_idx, sample_cost
-            # print 'target  : ', target_seq.transpose()
-            # print 'predict : ', update_output[1].transpose()
+            print 'target  : ', target_seq.transpose()
+            print 'predict : ', update_output[1].transpose()
             cost_list.append(sample_cost)
 
             if (batch_idx+1)%100==0:
@@ -174,7 +174,7 @@ def train_model(recurrent_model,
                                     legend_pos='upper left')
 
 if __name__=="__main__":
-    window_size   = 100
+    window_size   = 5
     hidden_size   = 100
     learning_rate = 1e-5
 

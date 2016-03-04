@@ -176,7 +176,7 @@ def train_model(recurrent_model,
 if __name__=="__main__":
     window_size   = 100
     hidden_size   = 100
-    learning_rate = 1e-3
+    learning_rate = 1e-5
 
     model_name = 'vanilla_rnn_' \
                  + '_WINDOW{}'.format(int(window_size)) \

@@ -163,10 +163,10 @@ def train_model(recurrent_model,
             # output_seq  = update_output[1].swapaxes(axis1=0, axis2=1)
             sample_cost = update_output[2].mean()
             if (batch_idx+1)%100==0:
-            print e, batch_idx, sample_cost
-            # print 'target  : ', target_seq.transpose()
-            # print 'predict : ', update_output[1].transpose()
-            cost_list.append(sample_cost)
+                print e, batch_idx, sample_cost
+                # print 'target  : ', target_seq.transpose()
+                # print 'predict : ', update_output[1].transpose()
+                cost_list.append(sample_cost)
 
             if (batch_idx+1)%1000==0:
                 plot_learning_curve(cost_values=[cost_list,],

@@ -56,7 +56,7 @@ def set_update_function(recurrent_model,
     target_seq  = tensor.tensor3(name='target_seq', dtype=floatX)
 
     # truncate grad
-    truncate_grad_step = tensor.scalar(name='truncate_grad_step', dtype=floatX)
+    truncate_grad_step = tensor.scalar(name='truncate_grad_step', dtype=int)
 
     # get hidden data
     hidden_seq = get_tensor_output(input=[input_seq, None, None, truncate_grad_step], layers=recurrent_model, is_training=True)

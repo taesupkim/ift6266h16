@@ -174,6 +174,7 @@ if __name__=="__main__":
     model_name = 'vanilla_rnn_' \
                  + '_WINDOW{}'.format(int(window_size)) \
                  + '_HIDDEN{}'.format(int(hidden_size)) \
+                 + '_BATCH{}'.format(int(batch_size)) \
                  + '_LR{}'.format(int(-numpy.log10(learning_rate))) \
 
     # set model

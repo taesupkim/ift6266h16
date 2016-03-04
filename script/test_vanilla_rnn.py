@@ -149,7 +149,7 @@ def train_model(recurrent_model,
             input_seq  = (input_seq/(2.**15)).astype(floatX)
             target_seq = (target_seq/(2.**15)).astype(floatX)
 
-            truncate_grad_step = 100
+            truncate_grad_step = 10
 
             # update model
             # print 'input_seq.shape : ', input_seq.shape
@@ -175,8 +175,8 @@ def train_model(recurrent_model,
                                     legend_pos='upper left')
 
 if __name__=="__main__":
-    window_size   = 5
-    hidden_size   = 100
+    window_size   = 100
+    hidden_size   = 10
     learning_rate = 1e-5
 
     model_name = 'vanilla_rnn_' \

@@ -176,7 +176,7 @@ def train_model(recurrent_model,
 if __name__=="__main__":
     window_size   = 100
     hidden_size   = 100
-    learning_rate = 1e-4
+    learning_rate = 1e-5
 
     model_name = 'vanilla_rnn_' \
                  + '_WINDOW{}'.format(int(window_size)) \
@@ -188,8 +188,8 @@ if __name__=="__main__":
     output_model    = set_output_model(input_size=hidden_size, output_size=1)
 
     # set optimizer
-    recurrent_optimizer = RmsProp(learning_rate=learning_rate, momentum=0.5).update_params
-    output_optimizer    = RmsProp(learning_rate=learning_rate, momentum=0.5).update_params
+    recurrent_optimizer = RmsProp(learning_rate=learning_rate).update_params
+    output_optimizer    = RmsProp(learning_rate=learning_rate).update_params
 
     # set data stream
     data_stream =set_datastream(window_size=window_size)

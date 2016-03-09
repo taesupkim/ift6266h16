@@ -173,7 +173,7 @@ def train_model(recurrent_model,
             # update result
             sample_cost = update_output[2].mean()
             if (batch_idx+1)%100==0:
-                print 'epoch {0:}, batch_idx {} : cost {}'.format(e, batch_idx, sample_cost)
+                print 'epoch {}, batch_idx {} : cost {}'.format(e, batch_idx, sample_cost)
                 cost_list.append(sample_cost)
 
             if (batch_idx+1)%1000==0:

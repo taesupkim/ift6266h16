@@ -2,12 +2,13 @@ __author__ = 'KimTS'
 import theano
 import numpy
 from theano import tensor
-from data.window import Window
+from fuel.datasets.hdf5 import H5PYDataset
+from fuel.streams import DataStream
+from fuel.schemes import ShuffledScheme
 from util.utils import save_wavfile
 from layer.activations import Tanh
 from layer.layers import LinearLayer, LstmLayer
 from layer.layer_utils import get_tensor_output, get_model_updates
-from utils.utils import merge_dicts
 from optimizer.rmsprop import RmsProp
 from numpy.random import RandomState
 from theano.sandbox.rng_mrg import MRG_RandomStreams
@@ -35,16 +36,13 @@ def set_output_model(input_size, output_size):
     layers.append(Tanh(name='output_squeeze_layer'))
     return layers
 
-def set_datastream(window_size=100,
-                   offset=1,
-                   youtube_id='XqaJ2Ol5cC4'):
-    from fuel.datasets.youtube_audio import YouTubeAudio
-    data_stream = YouTubeAudio(youtube_id).get_example_stream()
-    data_stream = Window(offset=offset,
-                         source_window=window_size,
-                         target_window=window_size,
-                         overlapping=True,
-                         data_stream=data_stream)
+def set_datastream(data_path, batch_size):
+    dataset = H5PYDataset(file_or_path=data_path,
+                          which_sets=('train',),
+                          sources=('input_feature', 'target_feature'))
+    data_stream = DataStream.default_stream(dataset=dataset,
+                                            iteration_scheme=ShuffledScheme(batch_size=batch_size,
+                                                                            examples=dataset.num_examples))
     return data_stream
 
 def set_update_function(recurrent_model,
@@ -154,8 +152,6 @@ def train_model(recurrent_model,
         data_iterator = data_stream.get_epoch_iterator()
         # for each batch
         for batch_idx, batch_data in enumerate(data_iterator):
-            if batch_idx<1800:
-                continue
             # if batch is single size
             if numpy.ndim(batch_data[0])==2:
                 input_data  = numpy.expand_dims(batch_data[0], axis=0)
@@ -237,7 +233,7 @@ if __name__=="__main__":
     optimizer = RmsProp(learning_rate=learning_rate).update_params
 
     # set data stream
-    data_stream =set_datastream(window_size=window_size)
+    data_stream =set_datastream(data_path, batch_size)
 
     # train model
     train_model(recurrent_model=recurrent_model,

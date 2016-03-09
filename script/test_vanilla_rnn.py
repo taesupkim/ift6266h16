@@ -48,48 +48,54 @@ def set_datastream(window_size=100,
 
 def set_update_function(recurrent_model,
                         output_model,
-                        recurrent_optimizer,
-                        output_optimizer):
-    # set input data (time_step*num_samples*features)
-    input_seq   = tensor.tensor3(name='input_seq', dtype=floatX)
-    # set target data (time_step*num_samples*output_size)
-    target_seq  = tensor.tensor3(name='target_seq', dtype=floatX)
-
+                        optimizer):
+    # set input data (time_length * num_samples * input_dims)
+    input_data  = tensor.tensor3(name='input_data', dtype=floatX)
+    # set input mask (time_length * num_samples)
+    input_mask  = tensor.matrix(name='input_mask', dtype=floatX)
+    # set init hidden data (num_samples * hidden_dims)
+    init_hidden = tensor.matrix(name='init_hidden', dtype=floatX)
     # truncate grad
     truncate_grad_step = tensor.scalar(name='truncate_grad_step', dtype='int32')
+    # set target data (time_length * num_samples * output_dims)
+    target_data = tensor.tensor3(name='target_data', dtype=floatX)
+    # gradient clipping
+    grad_clip = tensor.scalar(name='grad_clip', dtype=floatX)
 
     # get hidden data
-    hidden_seq = get_tensor_output(input=[input_seq, None, None, truncate_grad_step], layers=recurrent_model, is_training=True)
+    input_list  = [input_data, input_mask, init_hidden, truncate_grad_step]
+    hidden_data = get_tensor_output(input=input_list,
+                                    layers=recurrent_model,
+                                    is_training=True)
     # get prediction data
-    output_seq = get_tensor_output(input=hidden_seq, layers=output_model, is_training=True)
+    output_data = get_tensor_output(input=hidden_data,
+                                    layers=output_model,
+                                    is_training=True)
 
-    # get cost (here mask_seq is like weight, sum over feature)
-    sequence_cost = tensor.sqr(output_seq-target_seq)
-    sample_cost   = tensor.sum(sequence_cost, axis=(0, 2))
+    # get cost (here mask_seq is like weight, sum over feature, and time)
+    sample_cost = tensor.sqr(output_data-target_data)
+    sample_cost = tensor.sum(sample_cost, axis=(0, 2))
 
     # get model updates
-    recurrent_cost         = sample_cost.mean()
-    recurrent_updates_dict = get_model_updates(layers=recurrent_model,
-                                               cost=recurrent_cost,
-                                               optimizer=recurrent_optimizer,
-                                               use_grad_clip=1.0)
+    model_cost         = sample_cost.mean()
+    model_updates_dict = get_model_updates(layers=recurrent_model+output_model,
+                                           cost=model_cost,
+                                           optimizer=optimizer,
+                                           use_grad_clip=grad_clip)
 
-    output_cost         = sample_cost.mean()
-    output_updates_dict = get_model_updates(layers=output_model,
-                                            cost=output_cost,
-                                            optimizer=output_optimizer,
-                                            use_grad_clip=1.0)
-
-    update_function_inputs  = [input_seq,
-                               target_seq,
-                               truncate_grad_step]
-    update_function_outputs = [hidden_seq,
-                               output_seq,
+    update_function_inputs  = [input_data,
+                               input_mask,
+                               init_hidden,
+                               target_data,
+                               truncate_grad_step,
+                               grad_clip]
+    update_function_outputs = [hidden_data,
+                               output_data,
                                sample_cost]
 
     update_function = theano.function(inputs=update_function_inputs,
                                       outputs=update_function_outputs,
-                                      updates=merge_dicts([recurrent_updates_dict, output_updates_dict]),
+                                      updates=model_updates_dict,
                                       on_unused_input='ignore')
 
     return update_function
@@ -108,7 +114,7 @@ def set_generation_function(recurrent_model, output_model):
     # input data
     generation_function_inputs  = [input_data,
                                    prev_hidden_data]
-    generation_function_outputs = [prev_hidden_data,
+    generation_function_outputs = [cur_hidden_data,
                                    output_data]
 
     generation_function = theano.function(inputs=generation_function_inputs,
@@ -118,54 +124,60 @@ def set_generation_function(recurrent_model, output_model):
 
 def train_model(recurrent_model,
                 output_model,
-                recurrent_optimizer,
-                output_optimizer,
+                model_optimizer,
                 data_stream,
                 num_epochs,
                 model_name):
 
     update_function = set_update_function(recurrent_model=recurrent_model,
                                           output_model=output_model,
-                                          recurrent_optimizer=recurrent_optimizer,
-                                          output_optimizer=output_optimizer)
+                                          optimizer=model_optimizer)
 
     generation_function = set_generation_function(recurrent_model=recurrent_model,
                                                   output_model=output_model)
 
-
+    # for each epoch
     cost_list = []
     for e in xrange(num_epochs):
+        # get data iterator
         data_iterator = data_stream.get_epoch_iterator()
+        # for each batch
         for batch_idx, batch_data in enumerate(data_iterator):
+            # if batch is single size
             if numpy.ndim(batch_data[0])==2:
-                input_seq  = numpy.expand_dims(batch_data[0], axis=0)
-                input_seq  = numpy.swapaxes(input_seq, axis1=0, axis2=1)
-                target_seq = numpy.expand_dims(batch_data[1], axis=0)
-                target_seq = numpy.swapaxes(target_seq, axis1=0, axis2=1)
+                input_data  = numpy.expand_dims(batch_data[0], axis=0)
+                input_data  = numpy.swapaxes(input_data, axis1=0, axis2=1)
+                input_mask  = numpy.ones(shape=input_data.shape[:2], dtype=floatX)
+                target_data = numpy.expand_dims(batch_data[1], axis=0)
+                target_data = numpy.swapaxes(target_data, axis1=0, axis2=1)
             else:
-                input_seq  = numpy.swapaxes(batch_data[0], axis1=0, axis2=1)
-                target_seq = numpy.swapaxes(batch_data[1], axis1=0, axis2=1)
+                input_data  = numpy.swapaxes(batch_data[0], axis1=0, axis2=1)
+                input_mask  = numpy.ones(shape=input_data.shape[:2], dtype=floatX)
+                target_data = numpy.swapaxes(batch_data[1], axis1=0, axis2=1)
 
-            input_seq  = (input_seq/(2.**15)).astype(floatX)
-            target_seq = (target_seq/(2.**15)).astype(floatX)
+            input_data  = (input_data/(2.**15)).astype(floatX)
+            target_data = (target_data/(2.**15)).astype(floatX)
 
-            truncate_grad_step = 10
+            time_length = input_data.shape[0]
+            num_samples = input_data.shape[1]
+
+            truncate_grad_step = time_length
+
+            grad_clip = 1.0
 
             # update model
-            # print 'input_seq.shape : ', input_seq.shape
-            # print 'mask_seq.shape : ', mask_seq.shape
-            # print 'target_seq.shape : ', target_seq.shape
-            update_input  = [input_seq, target_seq, truncate_grad_step]
+            update_input  = [input_data,
+                             input_mask,
+                             None,
+                             target_data,
+                             truncate_grad_step,
+                             grad_clip]
             update_output = update_function(*update_input)
 
             # update result
-            # hidden_seq  = update_output[0].swapaxes()
-            # output_seq  = update_output[1].swapaxes(axis1=0, axis2=1)
             sample_cost = update_output[2].mean()
             if (batch_idx+1)%100==0:
-                print e, batch_idx, sample_cost
-                # print 'target  : ', target_seq.transpose()
-                # print 'predict : ', update_output[1].transpose()
+                print 'epoch {0:}, batch_idx {} : cost {}'.format(e, batch_idx, sample_cost)
                 cost_list.append(sample_cost)
 
             if (batch_idx+1)%1000==0:
@@ -189,8 +201,7 @@ if __name__=="__main__":
     output_model    = set_output_model(input_size=hidden_size, output_size=1)
 
     # set optimizer
-    recurrent_optimizer = RmsProp(learning_rate=learning_rate).update_params
-    output_optimizer    = RmsProp(learning_rate=learning_rate).update_params
+    optimizer = RmsProp(learning_rate=learning_rate).update_params
 
     # set data stream
     data_stream =set_datastream(window_size=window_size)
@@ -198,8 +209,7 @@ if __name__=="__main__":
     # train model
     train_model(recurrent_model=recurrent_model,
                 output_model=output_model,
-                recurrent_optimizer=recurrent_optimizer,
-                output_optimizer=output_optimizer,
+                model_optimizer=optimizer,
                 data_stream=data_stream,
                 num_epochs=100,
                 model_name=model_name)

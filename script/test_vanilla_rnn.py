@@ -143,6 +143,8 @@ def train_model(recurrent_model,
         data_iterator = data_stream.get_epoch_iterator()
         # for each batch
         for batch_idx, batch_data in enumerate(data_iterator):
+            if batch_idx<1800:
+                continue
             # if batch is single size
             if numpy.ndim(batch_data[0])==2:
                 input_data  = numpy.expand_dims(batch_data[0], axis=0)
@@ -174,8 +176,8 @@ def train_model(recurrent_model,
 
             # update result
             sample_cost = update_output[2].mean()
-            if (batch_idx+1)%100==0:
-                print 'epoch {}, batch_idx {} : cost {}'.format(e, batch_idx, sample_cost)
+            if (batch_idx+1)%1000==0:
+                print 'epoch {}, batch_idx {} : cost {} truncate({})'.format(e, batch_idx, sample_cost, truncate_grad_step)
                 cost_list.append(sample_cost)
 
             if (batch_idx+1)%1000==0:

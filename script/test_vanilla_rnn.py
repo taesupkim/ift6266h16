@@ -137,6 +137,7 @@ def train_model(recurrent_model,
 
     # for each epoch
     cost_list = []
+    cnt = 0
     for e in xrange(num_epochs):
         # get data iterator
         data_iterator = data_stream.get_epoch_iterator()
@@ -160,7 +161,8 @@ def train_model(recurrent_model,
             time_length = input_data.shape[0]
             num_samples = input_data.shape[1]
 
-            truncate_grad_step = time_length
+            truncate_grad_step = int(numpy.clip(numpy.exp(numpy.asarray(0.001*cnt)), 1, time_length))
+            cnt = cnt + 1
 
             # update model
             update_input  = [input_data,

@@ -163,7 +163,7 @@ def train_model(recurrent_model,
             time_length = input_data.shape[0]
             num_samples = input_data.shape[1]
 
-            truncate_grad_step = int(numpy.clip(numpy.asarray(0.01*cnt), 1, time_length))
+            truncate_grad_step = int(numpy.clip(numpy.asarray(0.001*cnt), 1, time_length))
             cnt = cnt + 1
 
             # update model

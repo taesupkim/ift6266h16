@@ -83,8 +83,8 @@ def set_update_function(recurrent_model,
                                            use_grad_clip=grad_clip)
 
     update_function_inputs  = [input_data,
-                               input_mask,
-                               init_hidden,
+                               None, #input_mask,
+                               None, #init_hidden,
                                target_data,
                                truncate_grad_step]
     update_function_outputs = [hidden_data,

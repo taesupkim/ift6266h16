@@ -205,7 +205,7 @@ def train_model(recurrent_model,
 
 
 if __name__=="__main__":
-    window_size   = 100
+    window_size   = 1000
     hidden_size   = 10
     learning_rate = 1e-5
 

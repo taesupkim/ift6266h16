@@ -48,7 +48,8 @@ def set_datastream(window_size=100,
 
 def set_update_function(recurrent_model,
                         output_model,
-                        optimizer):
+                        optimizer,
+                        grad_clip=1.0):
     # set input data (time_length * num_samples * input_dims)
     input_data  = tensor.tensor3(name='input_data', dtype=floatX)
     # set input mask (time_length * num_samples)
@@ -59,8 +60,6 @@ def set_update_function(recurrent_model,
     truncate_grad_step = tensor.scalar(name='truncate_grad_step', dtype='int32')
     # set target data (time_length * num_samples * output_dims)
     target_data = tensor.tensor3(name='target_data', dtype=floatX)
-    # gradient clipping
-    grad_clip = tensor.scalar(name='grad_clip', dtype=floatX)
 
     # get hidden data
     input_list  = [input_data, input_mask, init_hidden, truncate_grad_step]
@@ -87,8 +86,7 @@ def set_update_function(recurrent_model,
                                input_mask,
                                init_hidden,
                                target_data,
-                               truncate_grad_step,
-                               grad_clip]
+                               truncate_grad_step]
     update_function_outputs = [hidden_data,
                                output_data,
                                sample_cost]
@@ -131,7 +129,8 @@ def train_model(recurrent_model,
 
     update_function = set_update_function(recurrent_model=recurrent_model,
                                           output_model=output_model,
-                                          optimizer=model_optimizer)
+                                          optimizer=model_optimizer,
+                                          grad_clip=1.0)
 
     generation_function = set_generation_function(recurrent_model=recurrent_model,
                                                   output_model=output_model)
@@ -163,15 +162,12 @@ def train_model(recurrent_model,
 
             truncate_grad_step = time_length
 
-            grad_clip = 1.0
-
             # update model
             update_input  = [input_data,
                              input_mask,
                              None,
                              target_data,
-                             truncate_grad_step,
-                             grad_clip]
+                             truncate_grad_step]
             update_output = update_function(*update_input)
 
             # update result

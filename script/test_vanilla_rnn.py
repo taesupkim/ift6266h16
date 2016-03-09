@@ -3,6 +3,7 @@ import theano
 import numpy
 from theano import tensor
 from data.window import Window
+from util.utils import save_wavfile
 from layer.activations import Tanh
 from layer.layers import LinearLayer, RecurrentLayer
 from layer.layer_utils import get_tensor_output, get_model_updates
@@ -122,6 +123,7 @@ def set_generation_function(recurrent_model, output_model):
 
 def train_model(recurrent_model,
                 output_model,
+                num_hiddens,
                 model_optimizer,
                 data_stream,
                 num_epochs,
@@ -186,6 +188,22 @@ def train_model(recurrent_model,
                                     save_as=model_name+'.png',
                                     legend_pos='upper left')
 
+            if (batch_idx+1)%10000==0:
+                generation_sample = 100
+                generation_length = 1000
+                input_data  = numpy.random.uniform(low=-1.0, high=1.0, size=(generation_sample, input_feature_size)).astype(floatX)
+                hidden_data = numpy.random.uniform(low=-1.0, high=1.0, size=(generation_sample, num_hiddens)).astype(floatX)
+                output_data = numpy.zeros(shape=(generation_length, generation_sample, input_feature_size))
+                for t in xrange(generation_length):
+                    [hidden_data, input_data] = generation_function(input_data, hidden_data)
+                    output_data[t] = input_data
+
+                output_data = numpy.swapaxes(output_data, axis1=0, axis2=1)
+                save_wavfile(output_data, model_name+'_sample')
+
+
+
+
 if __name__=="__main__":
     window_size   = 100
     hidden_size   = 10
@@ -209,6 +227,7 @@ if __name__=="__main__":
     # train model
     train_model(recurrent_model=recurrent_model,
                 output_model=output_model,
+                num_hiddens=hidden_size,
                 model_optimizer=optimizer,
                 data_stream=data_stream,
                 num_epochs=100,

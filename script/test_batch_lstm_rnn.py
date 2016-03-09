@@ -152,17 +152,9 @@ def train_model(recurrent_model,
         data_iterator = data_stream.get_epoch_iterator()
         # for each batch
         for batch_idx, batch_data in enumerate(data_iterator):
-            # if batch is single size
-            if numpy.ndim(batch_data[0])==2:
-                input_data  = numpy.expand_dims(batch_data[0], axis=0)
-                input_data  = numpy.swapaxes(input_data, axis1=0, axis2=1)
-                input_mask  = numpy.ones(shape=input_data.shape[:2], dtype=floatX)
-                target_data = numpy.expand_dims(batch_data[1], axis=0)
-                target_data = numpy.swapaxes(target_data, axis1=0, axis2=1)
-            else:
-                input_data  = numpy.swapaxes(batch_data[0], axis1=0, axis2=1)
-                input_mask  = numpy.ones(shape=input_data.shape[:2], dtype=floatX)
-                target_data = numpy.swapaxes(batch_data[1], axis1=0, axis2=1)
+            input_data  = numpy.swapaxes(batch_data[0], axis1=0, axis2=1)
+            input_mask  = numpy.ones(shape=input_data.shape[:2], dtype=floatX)
+            target_data = numpy.swapaxes(batch_data[1], axis1=0, axis2=1)
 
             input_data  = (input_data/(2.**15)).astype(floatX)
             target_data = (target_data/(2.**15)).astype(floatX)
@@ -176,6 +168,7 @@ def train_model(recurrent_model,
             # update model
             update_input  = [input_data,
                              input_mask,
+                             None,
                              None,
                              target_data,
                              truncate_grad_step]

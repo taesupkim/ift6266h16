@@ -62,7 +62,7 @@ def set_update_function(recurrent_model,
     target_data = tensor.tensor3(name='target_data', dtype=floatX)
 
     # get hidden data
-    input_list  = [input_data, input_mask, init_hidden, truncate_grad_step]
+    input_list  = [input_data, None, None, truncate_grad_step]
     hidden_data = get_tensor_output(input=input_list,
                                     layers=recurrent_model,
                                     is_training=True)
@@ -83,8 +83,8 @@ def set_update_function(recurrent_model,
                                            use_grad_clip=grad_clip)
 
     update_function_inputs  = [input_data,
-                               None, #input_mask,
-                               None, #init_hidden,
+                               input_mask,
+                               init_hidden,
                                target_data,
                                truncate_grad_step]
     update_function_outputs = [hidden_data,

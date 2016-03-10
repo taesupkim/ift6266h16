@@ -165,7 +165,8 @@ def train_model(recurrent_model,
             time_length = input_data.shape[0]
             num_samples = input_data.shape[1]
 
-            truncate_grad_step = int(numpy.clip(numpy.asarray(0.001*cnt), 1, time_length))
+            # truncate_grad_step = int(numpy.clip(numpy.asarray(0.001*cnt), 1, time_length))
+            truncate_grad_step = time_length
             cnt = cnt + 1
 
             # update model
@@ -211,7 +212,7 @@ if __name__=="__main__":
     hidden_size   = 100
     learning_rate = 1e-5
 
-    model_name = 'vanilla_rnn_' \
+    model_name = 'vanilla_rnn_no_truncate' \
                  + '_WINDOW{}'.format(int(window_size)) \
                  + '_HIDDEN{}'.format(int(hidden_size)) \
                  + '_LR{}'.format(int(-numpy.log10(learning_rate))) \

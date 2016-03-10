@@ -7,4 +7,5 @@ def save_wavfile(signal, file_prefix, rate=16000):
 
     for s in xrange(num_samples):
         file_path = file_prefix+'_{}.wav'.format(s)
+        print file_path + ' saved'
         wav.write(file_path, rate, signal[s][:])

@@ -178,18 +178,17 @@ def train_model(recurrent_model,
 
             # update result
             sample_cost = update_output[2].mean()
-            if (batch_idx+1)%1000==0:
+            if (batch_idx+1)%100==0:
                 print 'epoch {}, batch_idx {} : cost {} truncate({})'.format(e, batch_idx, sample_cost, truncate_grad_step)
                 cost_list.append(sample_cost)
 
-            if (batch_idx+1)%1000==0:
+            if (batch_idx+1)%100==0:
                 plot_learning_curve(cost_values=[cost_list,],
                                     cost_names=['Input cost (train)',],
                                     save_as=model_name+'.png',
                                     legend_pos='upper left')
 
-            # if (batch_idx+1)%10000==0:
-            if (batch_idx+1)%10==0:
+            if (batch_idx+1)%10000==0:
                 generation_sample = 10
                 generation_length = 100000
                 input_data  = numpy.random.uniform(low=-1.0, high=1.0, size=(generation_sample, input_feature_size)).astype(floatX)

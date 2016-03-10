@@ -188,9 +188,10 @@ def train_model(recurrent_model,
                                     save_as=model_name+'.png',
                                     legend_pos='upper left')
 
-            if (batch_idx+1)%10000==0:
+            # if (batch_idx+1)%10000==0:
+            if (batch_idx+1)%10==0:
                 generation_sample = 10
-                generation_length = 1000
+                generation_length = 100000
                 input_data  = numpy.random.uniform(low=-1.0, high=1.0, size=(generation_sample, input_feature_size)).astype(floatX)
                 hidden_data = numpy.random.uniform(low=-1.0, high=1.0, size=(generation_sample, num_hiddens)).astype(floatX)
                 output_data = numpy.zeros(shape=(generation_length, generation_sample, input_feature_size))
@@ -201,14 +202,14 @@ def train_model(recurrent_model,
                 output_data = numpy.swapaxes(output_data, axis1=0, axis2=1)
                 output_data = output_data*(2.**15)
                 output_data = output_data.astype(numpy.int16)
-                save_wavfile(output_data, model_name+'_sample')
+                save_wavfile(output_data, model_name+'_E{}_B{}_sample'.format(e+1, batch_idx+1))
 
 
 
 
 if __name__=="__main__":
-    window_size   = 1000
-    hidden_size   = 10
+    window_size   = 10000
+    hidden_size   = 100
     learning_rate = 1e-5
 
     model_name = 'vanilla_rnn_' \

@@ -202,6 +202,7 @@ def train_model(recurrent_model,
                 output_data = numpy.swapaxes(output_data, axis1=0, axis2=1)
                 output_data = output_data*(2.**15)
                 output_data = output_data.astype(numpy.int16)
+                print output_data.shape
                 save_wavfile(output_data, model_name+'_E{}_B{}_sample'.format(e+1, batch_idx+1))
 
 

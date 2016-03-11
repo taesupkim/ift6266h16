@@ -100,6 +100,13 @@ def set_update_function(recurrent_model,
 
     return update_function
 
+def set_generation_scan_function(recurrent_model, output_model):
+    def step_function(prev_hidden_data,
+                      prev_cell_data,
+                      prev_output_data):
+        input_data = prev_output_data
+
+
 def set_generation_function(recurrent_model, output_model):
     # set input data (1*num_samples*features)
     input_data  = tensor.matrix(name='input_seq', dtype=floatX)
@@ -163,6 +170,7 @@ def train_model(recurrent_model,
             num_samples = input_data.shape[1]
 
             truncate_grad_step = int(numpy.clip(numpy.asarray(0.001*cnt), 1, time_length))
+            truncate_grad_step = time_length
             cnt = cnt + 1
 
             # update model

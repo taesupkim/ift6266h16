@@ -163,7 +163,6 @@ def train_model(recurrent_model,
             update_input  = [input_data,
                              input_mask,
                              None,
-                             None,
                              target_data,
                              truncate_grad_step]
             update_output = update_function(*update_input)

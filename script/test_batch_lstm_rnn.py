@@ -192,9 +192,10 @@ def train_model(recurrent_model,
                 generation_length = 1000
                 input_data  = numpy.random.uniform(low=-1.0, high=1.0, size=(generation_sample, input_feature_size)).astype(floatX)
                 hidden_data = numpy.random.uniform(low=-1.0, high=1.0, size=(generation_sample, num_hiddens)).astype(floatX)
+                cell_data   = numpy.zeros(shape=(generation_sample, num_hiddens))
                 output_data = numpy.zeros(shape=(generation_length, generation_sample, input_feature_size))
                 for t in xrange(generation_length):
-                    [hidden_data, cell_data, input_data] = generation_function(input_data, hidden_data)
+                    [hidden_data, cell_data, input_data] = generation_function(input_data, hidden_data, cell_data)
                     output_data[t] = input_data
 
                 output_data = numpy.swapaxes(output_data, axis1=0, axis2=1)

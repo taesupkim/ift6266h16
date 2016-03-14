@@ -192,7 +192,7 @@ def train_model(recurrent_model,
                 generation_length = 1000
                 input_data  = numpy.random.uniform(low=-1.0, high=1.0, size=(generation_sample, input_feature_size)).astype(floatX)
                 hidden_data = numpy.random.uniform(low=-1.0, high=1.0, size=(generation_sample, num_hiddens)).astype(floatX)
-                cell_data   = numpy.zeros(shape=(generation_sample, num_hiddens))
+                cell_data   = numpy.zeros(shape=(generation_sample, num_hiddens)).astype(floatX)
                 output_data = numpy.zeros(shape=(generation_length, generation_sample, input_feature_size))
                 for t in xrange(generation_length):
                     [hidden_data, cell_data, input_data] = generation_function(input_data, hidden_data, cell_data)
@@ -210,7 +210,7 @@ if __name__=="__main__":
     youtube_id    = 'XqaJ2Ol5cC4'
     window_size   = 1000
     hidden_size   = 100
-    batch_size    = 64
+    batch_size    = 128
     learning_rate = 1e-5
 
     data_path  = '/data/lisatmp4/taesup/data/YouTubeAudio/{}_{}.hdf5'.format(youtube_id, window_size)

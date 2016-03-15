@@ -89,15 +89,13 @@ if __name__=="__main__":
 
     youtube_id = 'XqaJ2Ol5cC4'
     interval_size_list = [0.1, 0.5, 1]
-    window_size_list = [100, 1000]
     for interval_size in interval_size_list:
-        for window_size in window_size_list:
-            if interval_size*window_size>100:
-                hdf5_name  = '/data/lisatmp4/taesup/data/YouTubeAudio/sec{}_step{}.hdf5'.format(interval_size, window_size)
-                print hdf5_name
-                print build_raw_interval_hdf5_dataset(youtube_id,
-                                                      hdf5_name,
-                                                      16000*interval_size,
-                                                      window_size)
-                print 'Done'
+        window_size = int(100/interval_size)
+        hdf5_name  = '/data/lisatmp4/taesup/data/YouTubeAudio/sec{}_step{}.hdf5'.format(interval_size, window_size)
+        print hdf5_name
+        print build_raw_interval_hdf5_dataset(youtube_id,
+                                              hdf5_name,
+                                              16000*interval_size,
+                                              window_size)
+        print 'Done'
 

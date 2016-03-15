@@ -16,14 +16,12 @@ np_rng = RandomState(42)
 
 floatX = theano.config.floatX
 
-def set_recurrent_model(input_size, hidden_size):
+def set_recurrent_model(input_size, hidden_size, num_layers):
     layers = []
-    layers.append(LstmLayer(input_dim=input_size,
-                            hidden_dim=hidden_size,
-                            name='lstm_layer0'))
-    layers.append(LstmLayer(input_dim=hidden_size,
-                            hidden_dim=hidden_size,
-                            name='lstm_layer1'))
+    for l in xrange(num_layers):
+        layers.append(LstmLayer(input_dim=input_size if l is 0 else hidden_size,
+                                hidden_dim=hidden_size,
+                                name='lstm_layer{}'.format(l)))
     return layers
 
 def set_output_model(input_size, output_size):
@@ -237,6 +235,7 @@ if __name__=="__main__":
     window_size   = 1000
     hidden_size   = 1000
     learning_rate = 1e-3
+    num_layers    = 2
 
     model_name = 'lstm_rnn_layer2' \
                  + '_FEATURE{}'.format(int(feature_size)) \
@@ -246,7 +245,8 @@ if __name__=="__main__":
 
     # set model
     recurrent_model = set_recurrent_model(input_size=feature_size,
-                                          hidden_size=hidden_size)
+                                          hidden_size=hidden_size,
+                                          num_layers=num_layers)
     output_model    = set_output_model(input_size=hidden_size,
                                        output_size=feature_size)
 
@@ -261,6 +261,7 @@ if __name__=="__main__":
     train_model(feature_size=feature_size,
                 time_size=window_size,
                 hidden_size=hidden_size,
+                num_layers=num_layers,
                 recurrent_model=recurrent_model,
                 output_model=output_model,
                 model_optimizer=optimizer,

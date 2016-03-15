@@ -116,7 +116,7 @@ def set_generation_function(recurrent_model, output_model):
     # get intermediate states
     input_list = [input_data, prev_hidden_data_list[0], prev_cell_data_list[0]]
     for l, layer in enumerate(recurrent_model):
-        recurrent_data  = get_tensor_output(input=input_list, layers=layer, is_training=False)
+        recurrent_data  = layer.forward(input_data_list=input_list, is_training=False)
         cur_hidden_data_list.append(recurrent_data[0])
         cur_cell_data_list.append(recurrent_data[1])
 

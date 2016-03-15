@@ -155,6 +155,7 @@ def train_model(feature_size,
         for batch_idx, batch_data in enumerate(data_iterator):
             # source data
             source_data = batch_data[0]
+            print source_data.shape, time_size, feature_size, time_size*feature_size
             source_data = source_data.reshape(time_size, feature_size)
             source_data = numpy.expand_dims(source_data, axis=0)
             source_data = numpy.swapaxes(source_data, axis1=0, axis2=1)
@@ -237,8 +238,8 @@ if __name__=="__main__":
     optimizer = RmsProp(learning_rate=learning_rate).update_params
 
     # set data stream
-    data_stream =set_datastream(offset=feature_size,
-                                window_size=window_size)
+    data_stream = set_datastream(offset=feature_size,
+                                 window_size=window_size)
 
     # train model
     train_model(feature_size=feature_size,

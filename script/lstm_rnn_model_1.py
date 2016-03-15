@@ -38,8 +38,8 @@ def set_datastream(window_size=100,
     from fuel.datasets.youtube_audio import YouTubeAudio
     data_stream = YouTubeAudio(youtube_id).get_example_stream()
     data_stream = Window(offset=offset,
-                         source_window=window_size,
-                         target_window=window_size,
+                         source_window=window_size*offset,
+                         target_window=window_size*offset,
                          overlapping=True,
                          data_stream=data_stream)
     return data_stream

@@ -46,7 +46,7 @@ def build_raw_interval_hdf5_dataset(youtube_id, hdf5_name, interval_size, window
 
     output_path = '{}.hdf5'.format(hdf5_name)
     output_path = os.path.join(output_path)
-
+    print 'total num sequences : ', num_sequences
     with h5py.File(output_path, mode='w') as h5file:
         input_feature  = h5file.create_dataset(name='input_feature' , shape=(num_sequences, window_size, interval_size), dtype='int16')
         target_feature = h5file.create_dataset(name='target_feature', shape=(num_sequences, window_size, interval_size), dtype='int16')

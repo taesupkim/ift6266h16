@@ -2,7 +2,7 @@ from scipy.io import wavfile
 import cPickle as pickle
 import numpy as np
 
-def get_signal_data(file_path, file_name, dtype='float32'):
+def get_signal_data(file_path, file_name, dtype='int16'):
     # sampling_rate : number of time steps for each second
     sampling_rate, raw_data = wavfile.read(file_path + file_name)
     raw_data = np.asarray(raw_data, dtype=dtype)
@@ -50,7 +50,7 @@ def build_sequence_data(raw_data_set,
             seq_data = raw_data_set[i][seq_start_idx:seq_end_idx]
             seq_list.append(seq_data)
             seq_start_idx += overlap
-        sequence_data_set.append(np.asarray(seq_list, dtype="float32"))
+        sequence_data_set.append(np.asarray(a=seq_list, dtype="int16"))
         print 'sequence data set shape : ({}, {})'.format(sequence_data_set[-1].shape[0],
                                                           sequence_data_set[-1].shape[1])
 
@@ -63,7 +63,8 @@ if __name__=="__main__":
     train_ratio = 0.7
     # read data
     [raw_data, sampling_rate, time_length] = get_signal_data(file_path, file_name)
-    [raw_data, data_min, data_max] = normalize_data(raw_data)
+    # [raw_data, data_min, data_max] = normalize_data(raw_data)
+    [data_mean, data_min, data_max] = data_statics(raw_data)
     [train_raw_data, valid_raw_data] = split_data(raw_data, train_ratio)
 
     # dataset type
@@ -83,6 +84,6 @@ if __name__=="__main__":
             build_sequence_data([train_raw_data, valid_raw_data],
                                 input_size,
                                 sequence_length,
-                                input_size,
+                                input_size/2,
                                 data_set_path,
                                 [data_min, data_max])

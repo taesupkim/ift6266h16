@@ -38,7 +38,6 @@ def build_sequence_data(raw_data_set,
                         overlap,
                         data_set_path,
                         data_min_max):
-    sequence_data_set = []
     sequence_length = input_size*sequence_timesteps
     for i in xrange(len(raw_data_set)):
         seq_start_idx = 0
@@ -53,12 +52,13 @@ def build_sequence_data(raw_data_set,
         print len(seq_list)
         seq_list = np.asarray(a=seq_list, dtype='int16')
 
-        sequence_data_set.append(seq_list)
-        print 'sequence data set shape : ({}, {})'.format(sequence_data_set[-1].shape[0],
-                                                          sequence_data_set[-1].shape[1])
+        print 'sequence data set shape : ({}, {})'.format(seq_list.shape[0],
+                                                          seq_list.shape[1])
 
-    with open(data_set_path, "wb") as f:
-        pickle.dump((sequence_data_set, data_min_max[0], data_min_max[1]), f, pickle.HIGHEST_PROTOCOL )
+        with open(data_set_path + '_{}'.format('train' if i==0 else 'valid'), "wb") as f:
+            pickle.dump((seq_list, data_min_max[0], data_min_max[1]), f, pickle.HIGHEST_PROTOCOL )
+
+
 
 if __name__=="__main__":
     file_path = '/data/lisatmp4/taesup/data/YouTubeAudio/'
@@ -80,8 +80,8 @@ if __name__=="__main__":
                                                           sequence_time_length,
                                                           sampling_rate)
 
-            data_set_path = file_path + 'audio_input{}seq{}.pkl'.format(input_size,
-                                                                        sequence_length)
+            data_set_path = file_path + 'audio_input{}seq{}'.format(input_size,
+                                                                    sequence_length)
             # build dataset
             build_sequence_data([train_raw_data, valid_raw_data],
                                 input_size,

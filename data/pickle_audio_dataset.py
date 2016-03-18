@@ -58,8 +58,10 @@ def build_sequence_data(raw_data_set,
         print 'sequence data set shape : ({}, {})'.format(len(seq_list),
                                                           seq_list[0].shape[0])
 
-    with open(data_set_path + '_{}'.format('train' if i==0 else 'valid'), "wb") as f:
+    print 'pickle start'
+    with open(data_set_path + '.pkl', "wb") as f:
         pickle.dump((seq_dataset, data_min_max[0], data_min_max[1]), f, pickle.HIGHEST_PROTOCOL )
+    print 'pickle done'
 
 
 
@@ -83,8 +85,8 @@ if __name__=="__main__":
                                                           sequence_time_length,
                                                           sampling_rate)
 
-            data_set_path = file_path + 'audio_input{}seq{}'.format(input_size,
-                                                                    sequence_length)
+            data_set_path = file_path + 'audio_input{}seq{}'.format(int(input_size),
+                                                                    int(sequence_length))
             # build dataset
             build_sequence_data([train_raw_data, valid_raw_data],
                                 input_size,

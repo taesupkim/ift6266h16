@@ -50,7 +50,7 @@ def build_sequence_data(raw_data_set,
             seq_data = raw_data_set[i][seq_start_idx:seq_end_idx]
             seq_list.append(seq_data)
             seq_start_idx += overlap
-        sequence_data_set.append(np.asarray(a=seq_list, dtype="int16"))
+        sequence_data_set.append(np.asarray(a=seq_list, dtype='int16'))
         print 'sequence data set shape : ({}, {})'.format(sequence_data_set[-1].shape[0],
                                                           sequence_data_set[-1].shape[1])
 

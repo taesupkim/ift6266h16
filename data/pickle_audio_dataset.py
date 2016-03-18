@@ -83,6 +83,6 @@ if __name__=="__main__":
             build_sequence_data([train_raw_data, valid_raw_data],
                                 input_size,
                                 sequence_length,
-                                input_size/2,
+                                input_size,
                                 data_set_path,
                                 [data_min, data_max])

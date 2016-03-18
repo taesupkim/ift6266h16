@@ -58,8 +58,8 @@ def build_sequence_data(raw_data_set,
         pickle.dump((sequence_data_set, data_min_max[0], data_min_max[1]), f, pickle.HIGHEST_PROTOCOL )
 
 if __name__=="__main__":
-    file_path = '\\'
-    file_name = '.wav'
+    file_path = '/data/lisatmp4/taesup/data/YouTubeAudio/'
+    file_name = 'XqaJ2Ol5cC4.wav'
     train_ratio = 0.7
     # read data
     [raw_data, sampling_rate, time_length] = get_signal_data(file_path, file_name)

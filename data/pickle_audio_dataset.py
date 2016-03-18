@@ -38,6 +38,7 @@ def build_sequence_data(raw_data_set,
                         overlap,
                         data_set_path,
                         data_min_max):
+    seq_dataset = []
     sequence_length = input_size*sequence_timesteps
     for i in xrange(len(raw_data_set)):
         seq_start_idx = 0
@@ -52,12 +53,12 @@ def build_sequence_data(raw_data_set,
             seq_start_idx += overlap
         # print len(seq_list), seq_list[0].dtype
         # seq_list = np.asarray(a=seq_list, dtype='int16',)
-
+        seq_dataset.append(seq_list)
         print 'sequence data set shape : ({}, {})'.format(seq_list.shape[0],
                                                           seq_list.shape[1])
 
-        with open(data_set_path + '_{}'.format('train' if i==0 else 'valid'), "wb") as f:
-            pickle.dump((seq_list, data_min_max[0], data_min_max[1]), f, pickle.HIGHEST_PROTOCOL )
+    with open(data_set_path + '_{}'.format('train' if i==0 else 'valid'), "wb") as f:
+        pickle.dump((seq_dataset, data_min_max[0], data_min_max[1]), f, pickle.HIGHEST_PROTOCOL )
 
 
 

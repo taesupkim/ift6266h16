@@ -49,8 +49,8 @@ def build_sequence_data(raw_data_set,
             seq_data = raw_data_set[i][seq_start_idx:seq_end_idx]
             seq_list.append(seq_data)
             seq_start_idx += overlap
-        print len(seq_list)
-        seq_list = np.asarray(a=seq_list, dtype='int16')
+        print len(seq_list), seq_list[0].dtype
+        seq_list = np.asarray(a=seq_list, dtype='int16',)
 
         print 'sequence data set shape : ({}, {})'.format(seq_list.shape[0],
                                                           seq_list.shape[1])
@@ -86,6 +86,6 @@ if __name__=="__main__":
             build_sequence_data([train_raw_data, valid_raw_data],
                                 input_size,
                                 sequence_length,
-                                input_size,
+                                input_size/2,
                                 data_set_path,
                                 [data_min, data_max])

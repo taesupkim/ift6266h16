@@ -55,8 +55,8 @@ def build_sequence_data(raw_data_set,
         print len(seq_list), seq_list[0].dtype
         # seq_list = np.asarray(a=seq_list, dtype='int16',)
         seq_dataset.append(seq_list)
-        print 'sequence data set shape : ({}, {})'.format(seq_list.shape[0],
-                                                          seq_list.shape[1])
+        print 'sequence data set shape : ({}, {})'.format(len(seq_list),
+                                                          seq_list[0].shape[0])
 
     with open(data_set_path + '_{}'.format('train' if i==0 else 'valid'), "wb") as f:
         pickle.dump((seq_dataset, data_min_max[0], data_min_max[1]), f, pickle.HIGHEST_PROTOCOL )

@@ -42,16 +42,17 @@ def build_sequence_data(raw_data_set,
     sequence_length = input_size*sequence_timesteps
     for i in xrange(len(raw_data_set)):
         seq_start_idx = 0
-        seq_list = np.empty(shape=(1,sequence_length), dtype='int16')
+        # seq_list = np.empty(shape=(1,sequence_length), dtype='int16')
+        seq_list = []
         while True:
             seq_end_idx = seq_start_idx + sequence_length
             if seq_end_idx>=raw_data_set[i].shape[0]:
                 break
             seq_data = raw_data_set[i][seq_start_idx:seq_end_idx]
-            seq_list = np.vstack((seq_list, seq_data))
-            # seq_list.append(seq_data)
+            # seq_list = np.vstack((seq_list, seq_data))
+            seq_list.append(seq_data)
             seq_start_idx += overlap
-        # print len(seq_list), seq_list[0].dtype
+        print len(seq_list), seq_list[0].dtype
         # seq_list = np.asarray(a=seq_list, dtype='int16',)
         seq_dataset.append(seq_list)
         print 'sequence data set shape : ({}, {})'.format(seq_list.shape[0],

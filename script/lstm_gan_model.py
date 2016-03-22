@@ -400,7 +400,7 @@ if __name__=="__main__":
     feature_size  = 160
     hidden_size   = 100
     learning_rate = 1e-3
-    num_layers    = 1
+    num_layers    = 3
 
     model_name = 'lstm_gan' \
                  + '_FEATURE{}'.format(int(feature_size)) \

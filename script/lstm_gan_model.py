@@ -106,7 +106,7 @@ def set_generator_update_function(generator_rnn_model,
     # generator_cost = tensor.nnet.binary_crossentropy(output=sample_cost_data,
     #                                                  target=tensor.ones_like(sample_cost_data)).sum(axis=2)
     generator_cost = tensor.nnet.binary_crossentropy(output=sample_cost_data,
-                                                     target=tensor.ones_like(sample_cost_data)).sum(axis=2)
+                                                     target=tensor.ones_like(sample_cost_data)).sum(axis=1)
 
     # set generator update
     generator_updates_cost = generator_cost.mean()
@@ -190,9 +190,9 @@ def set_discriminator_update_function(generator_rnn_model,
     # get cost based on discriminator (binary cross-entropy over all data)
     # sum over discriminator cost over time_length and output_dims, then mean over samples
     discriminator_cost = (tensor.nnet.binary_crossentropy(output=input_cost_data,
-                                                          target=tensor.ones_like(input_cost_data)).sum(axis=2) +
+                                                          target=tensor.ones_like(input_cost_data)).sum(axis=1) +
                           tensor.nnet.binary_crossentropy(output=sample_cost_data,
-                                                          target=tensor.zeros_like(sample_cost_data)).sum(axis=2))
+                                                          target=tensor.zeros_like(sample_cost_data)).sum(axis=1))
 
     # set discriminator update
     discriminator_updates_cost = discriminator_cost.mean()

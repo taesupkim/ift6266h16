@@ -320,6 +320,8 @@ def train_model(feature_size,
             # normalize
             source_data = (source_data/(2.**15)).astype(floatX)
 
+            print source_data.shape
+
             # set generator initial values
             init_input_data  = np_rng.uniform(low=-1.0, high=1.0, size=(source_data.shape[1], feature_size)).astype(floatX)
             init_hidden_data = np_rng.uniform(low=-1.0, high=1.0, size=(source_data.shape[1], hidden_size)).astype(floatX)

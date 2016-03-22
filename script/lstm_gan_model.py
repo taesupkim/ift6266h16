@@ -33,10 +33,10 @@ def set_generator_recurrent_model(input_size,
                                   hidden_size,
                                   num_layers):
     layers = []
-    for l in xrange(num_layers):
-        layers.append(LstmLoopLayer(input_dim=input_size if l is 0 else hidden_size,
-                                    hidden_dim=hidden_size,
-                                    name='generator_rnn_layer{}'.format(l)))
+    layers.append(LstmLoopLayer(input_dim=input_size,
+                                hidden_dim=hidden_size,
+                                num_layers=num_layers,
+                                name='generator_rnn_model'))
     return layers
 
 def set_discriminator_recurrent_model(input_size,

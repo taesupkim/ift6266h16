@@ -71,7 +71,7 @@ def set_generator_update_function(generator_rnn_model,
                                      dtype=floatX)
 
     # init cell data (num_samples *input_dims)
-    init_cell_data = tensor.matrix(name='init_hidden_data',
+    init_cell_data = tensor.matrix(name='init_cell_data',
                                    dtype=floatX)
 
     # sampling length
@@ -147,7 +147,7 @@ def set_discriminator_update_function(generator_rnn_model,
                                      dtype=floatX)
 
     # init cell data (num_samples *input_dims)
-    init_cell_data = tensor.matrix(name='init_hidden_data',
+    init_cell_data = tensor.matrix(name='init_cell_data',
                                    dtype=floatX)
 
     # sampling length
@@ -188,7 +188,7 @@ def set_discriminator_update_function(generator_rnn_model,
     discriminator_cost = (tensor.nnet.binary_crossentropy(output=input_cost_data,
                                                           target=tensor.ones_like(input_cost_data)).sum(axis=(0, 2)) +
                           tensor.nnet.binary_crossentropy(output=sample_cost_data,
-                                                          target=tensor.zeros_like(sample_cost_data))).sum(axis=(0, 2))
+                                                          target=tensor.zeros_like(sample_cost_data)).sum(axis=(0, 2)))
 
     # set discriminator update
     discriminator_updates_cost = discriminator_cost.mean()
@@ -320,8 +320,6 @@ def train_model(feature_size,
             # normalize
             source_data = (source_data/(2.**15)).astype(floatX)
 
-            print source_data.shape
-
             # set generator initial values
             init_input_data  = np_rng.uniform(low=-1.0, high=1.0, size=(source_data.shape[1], feature_size)).astype(floatX)
             init_hidden_data = np_rng.uniform(low=-1.0, high=1.0, size=(source_data.shape[1], hidden_size)).astype(floatX)
@@ -351,7 +349,8 @@ def train_model(feature_size,
 
             if (batch_idx+1)%10==0:
                 print 'epoch {}, batch_idx {} => generator     cost {}'.format(e, batch_idx, generator_cost)
-                print '                       => discriminator cost {}'.format(e, batch_idx, discriminator_cost)
+                print 'epoch {}, batch_idx {} => discriminator cost {}'.format(e, batch_idx, discriminator_cost)
+                print '=========================================================='
                 generator_cost_list.append(generator_cost)
                 discriminator_cost_list.append(discriminator_cost)
                 plot_learning_curve(cost_values=[generator_cost_list, discriminator_cost_list],

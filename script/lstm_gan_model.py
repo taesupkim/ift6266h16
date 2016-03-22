@@ -264,6 +264,7 @@ def train_model(feature_size,
                 model_name):
 
     # generator updater
+    print 'DEBUGGING GENERATOR UPDATE FUNCTION '
     generator_updater = set_generator_update_function(generator_rnn_model=generator_rnn_model,
                                                       discriminator_rnn_model=discriminator_rnn_model,
                                                       discriminator_output_model=discriminator_output_model,
@@ -271,6 +272,7 @@ def train_model(feature_size,
                                                       grad_clipping=1.0)
 
     # discriminator updater
+    print 'DEBUGGING DISCRIMINATOR UPDATE FUNCTION '
     discriminator_updater = set_discriminator_update_function(generator_rnn_model=generator_rnn_model,
                                                               discriminator_rnn_model=discriminator_rnn_model,
                                                               discriminator_output_model=discriminator_output_model,
@@ -278,12 +280,15 @@ def train_model(feature_size,
                                                               grad_clipping=1.0)
 
     # sample generator
+    print 'DEBUGGING SAMPLE GENERATOR FUNCTION '
     sample_generator = set_sample_generation_function(generator_rnn_model=generator_rnn_model)
 
+
+
+    print 'START TRAINING'
     # for each epoch
     generator_cost_list = []
     discriminator_cost_list = []
-
     for e in xrange(num_epochs):
         window_size = 100
 

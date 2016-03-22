@@ -25,7 +25,7 @@ def set_datastream(feature_size=16000,
     data_stream = Window(offset=feature_size,
                          source_window=window_size*feature_size,
                          target_window=window_size*feature_size,
-                         overlapping=True,
+                         overlapping=False,
                          data_stream=data_stream)
     return data_stream
 
@@ -289,8 +289,10 @@ def train_model(feature_size,
     # for each epoch
     generator_cost_list = []
     discriminator_cost_list = []
+
+    init_window_size = 5
     for e in xrange(num_epochs):
-        window_size = 100
+        window_size = init_window_size*(e+1)
 
         # set data stream with proper length (window size)
         data_stream = set_datastream(feature_size=feature_size,
@@ -299,23 +301,24 @@ def train_model(feature_size,
         data_iterator = data_stream.get_epoch_iterator()
 
         # for each batch
-        batch_cnt = 0
+        batch_count = 0
+        batch_size = 0
         source_data = []
         for batch_idx, batch_data in enumerate(data_iterator):
-            if batch_cnt==0:
+            if batch_size==0:
                 source_data = []
             # source data
             single_data = batch_data[0]
             single_data = single_data.reshape(window_size, feature_size)
             source_data.append(single_data)
-            batch_cnt += 1
+            batch_size += 1
 
-            if batch_cnt<64:
+            if batch_size<64:
                 continue
             else:
                 source_data = numpy.asarray(source_data, dtype=floatX)
                 source_data = numpy.swapaxes(source_data, axis1=0, axis2=1)
-                batch_cnt = 0
+                batch_size = 0
 
             # normalize
             source_data = (source_data/(2.**15)).astype(floatX)
@@ -335,6 +338,9 @@ def train_model(feature_size,
             generator_cost = generator_updater_output[1].mean()
 
             # update discriminator
+            init_input_data  = np_rng.uniform(low=-1.0, high=1.0, size=(source_data.shape[1], feature_size)).astype(floatX)
+            init_hidden_data = np_rng.uniform(low=-1.0, high=1.0, size=(source_data.shape[1], hidden_size)).astype(floatX)
+            init_cell_data   = np_rng.normal(size=(source_data.shape[1], hidden_size)).astype(floatX)
             discriminator_updater_input = [source_data,
                                            init_input_data,
                                            init_hidden_data,
@@ -345,11 +351,11 @@ def train_model(feature_size,
             sample_cost_data   = discriminator_updater_output[1]
             discriminator_cost = discriminator_updater_output[2].mean()
 
+            batch_count += 1
 
-
-            if (batch_idx+1)%10==0:
-                print 'epoch {}, batch_idx {} => generator     cost {}'.format(e, batch_idx, generator_cost)
-                print 'epoch {}, batch_idx {} => discriminator cost {}'.format(e, batch_idx, discriminator_cost)
+            if batch_count%10==0:
+                print 'epoch {}, batch_cnt {} => generator     cost {}'.format(e, batch_idx, generator_cost)
+                print 'epoch {}, batch_cnt {} => discriminator cost {}'.format(e, batch_idx, discriminator_cost)
                 print '=========================================================='
                 generator_cost_list.append(generator_cost)
                 discriminator_cost_list.append(discriminator_cost)
@@ -364,7 +370,7 @@ def train_model(feature_size,
                                     legend_pos='upper left')
 
 
-            if (batch_idx+1)%1000==0:
+            if batch_count%100==0:
                 num_samples = 10
                 num_sec     = 10
                 sampling_length = num_sec*sampling_rate/feature_size
@@ -382,9 +388,9 @@ def train_model(feature_size,
 
                 sample_data = numpy.swapaxes(sample_data, axis1=0, axis2=1)
                 sample_data = sample_data.reshape((num_samples, -1))
-                num_samples = num_samples*(2.**15)
-                num_samples = num_samples.astype(numpy.int16)
-                save_wavfile(num_samples, model_name+'_sample')
+                sample_data = sample_data*(2.**15)
+                sample_data = sample_data.astype(numpy.int16)
+                save_wavfile(sample_data, model_name+'_sample')
 
 if __name__=="__main__":
     feature_size  = 160
@@ -420,5 +426,5 @@ if __name__=="__main__":
                 discriminator_rnn_model=discriminator_rnn_model,
                 discriminator_output_model=discriminator_output_model,
                 discriminator_optimizer=discriminator_optimizer,
-                num_epochs=10,
+                num_epochs=100,
                 model_name=model_name)

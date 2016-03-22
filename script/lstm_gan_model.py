@@ -402,7 +402,7 @@ def train_model(feature_size,
 if __name__=="__main__":
     feature_size  = 160
     hidden_size   = 100
-    learning_rate = 1e-2
+    learning_rate = 1e-3
     num_layers    = 1
 
     model_name = 'lstm_gan' \
@@ -422,7 +422,7 @@ if __name__=="__main__":
     discriminator_output_model = set_discriminator_output_model(input_size=hidden_size)
 
     # set optimizer
-    generator_optimizer     = RmsProp(learning_rate=learning_rate*10.).update_params
+    generator_optimizer     = RmsProp(learning_rate=learning_rate).update_params
     discriminator_optimizer = RmsProp(learning_rate=learning_rate).update_params
 
 

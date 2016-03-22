@@ -31,12 +31,12 @@ def set_datastream(feature_size=16000,
 
 def set_generator_recurrent_model(input_size,
                                   hidden_size,
-                                  max_length):
+                                  num_layers):
     layers = []
-    layers.append(LstmLoopLayer(input_dim=input_size,
-                                hidden_dim=hidden_size,
-                                max_time=max_length,
-                                name='generator_rnn_model'))
+    for l in xrange(num_layers):
+        layers.append(LstmLoopLayer(input_dim=input_size if l is 0 else hidden_size,
+                                    hidden_dim=hidden_size,
+                                    name='generator_rnn_layer{}'.format(l)))
     return layers
 
 def set_discriminator_recurrent_model(input_size,
@@ -66,13 +66,13 @@ def set_generator_update_function(generator_rnn_model,
     init_input_data = tensor.matrix(name='init_input_data',
                                     dtype=floatX)
 
-    # init hidden data (num_samples *input_dims)
-    init_hidden_data = tensor.matrix(name='init_hidden_data',
-                                     dtype=floatX)
+    # init hidden data (num_layers * num_samples *input_dims)
+    init_hidden_data = tensor.tensor3(name='init_hidden_data',
+                                      dtype=floatX)
 
-    # init cell data (num_samples *input_dims)
-    init_cell_data = tensor.matrix(name='init_cell_data',
-                                   dtype=floatX)
+    # init cell data (num_layers * num_samples *input_dims)
+    init_cell_data = tensor.tensor3(name='init_cell_data',
+                                    dtype=floatX)
 
     # sampling length
     sampling_length = tensor.scalar(name='sampling_length',
@@ -94,8 +94,6 @@ def set_generator_update_function(generator_rnn_model,
                                                  layers=discriminator_rnn_model,
                                                  is_training=True)[-1]
 
-    discriminator_hidden_data = discriminator_hidden_data[-1]
-
     # get discriminator output data
     sample_cost_data = get_tensor_output(input=discriminator_hidden_data,
                                          layers=discriminator_output_model,
@@ -103,10 +101,8 @@ def set_generator_update_function(generator_rnn_model,
 
     # get cost based on discriminator (binary cross-entropy over all data)
     # sum over generator cost over time_length and output_dims, then mean over samples
-    # generator_cost = tensor.nnet.binary_crossentropy(output=sample_cost_data,
-    #                                                  target=tensor.ones_like(sample_cost_data)).sum(axis=2)
     generator_cost = tensor.nnet.binary_crossentropy(output=sample_cost_data,
-                                                     target=tensor.ones_like(sample_cost_data)).sum(axis=1)
+                                                     target=tensor.ones_like(sample_cost_data)).sum(axis=2)
 
     # set generator update
     generator_updates_cost = generator_cost.mean()
@@ -146,13 +142,13 @@ def set_discriminator_update_function(generator_rnn_model,
     init_input_data = tensor.matrix(name='init_input_data',
                                     dtype=floatX)
 
-    # init hidden data (num_samples *input_dims)
-    init_hidden_data = tensor.matrix(name='init_hidden_data',
-                                     dtype=floatX)
+    # init hidden data (num_layers * num_samples *input_dims)
+    init_hidden_data = tensor.tensor3(name='init_hidden_data',
+                                      dtype=floatX)
 
-    # init cell data (num_samples *input_dims)
-    init_cell_data = tensor.matrix(name='init_cell_data',
-                                   dtype=floatX)
+    # init cell data (num_layers * num_samples *input_dims)
+    init_cell_data = tensor.tensor3(name='init_cell_data',
+                                    dtype=floatX)
 
     # sampling length
     sampling_length = input_data.shape[0]
@@ -176,23 +172,23 @@ def set_discriminator_update_function(generator_rnn_model,
     # get discriminator input cost data
     input_cost_data = get_tensor_output(input=get_lstm_outputs(input_list=discriminator_input_data_list,
                                                                layers=discriminator_rnn_model,
-                                                               is_training=True)[-1][-1],
+                                                               is_training=True)[-1],
                                         layers=discriminator_output_model,
                                         is_training=True)
 
     # get discriminator sample cost data
     sample_cost_data = get_tensor_output(input=get_lstm_outputs(input_list=discriminator_sample_data_list,
                                                                 layers=discriminator_rnn_model,
-                                                                is_training=True)[-1][-1],
+                                                                is_training=True)[-1],
                                         layers=discriminator_output_model,
                                         is_training=True)
 
     # get cost based on discriminator (binary cross-entropy over all data)
     # sum over discriminator cost over time_length and output_dims, then mean over samples
     discriminator_cost = (tensor.nnet.binary_crossentropy(output=input_cost_data,
-                                                          target=tensor.ones_like(input_cost_data)).sum(axis=1) +
+                                                          target=tensor.ones_like(input_cost_data)).sum(axis=2) +
                           tensor.nnet.binary_crossentropy(output=sample_cost_data,
-                                                          target=tensor.zeros_like(sample_cost_data)).sum(axis=1))
+                                                          target=tensor.zeros_like(sample_cost_data)).sum(axis=2))
 
     # set discriminator update
     discriminator_updates_cost = discriminator_cost.mean()
@@ -224,13 +220,13 @@ def set_sample_generation_function(generator_rnn_model):
     init_input_data = tensor.matrix(name='init_input_data',
                                     dtype=floatX)
 
-    # init hidden data (num_samples *input_dims)
-    init_hidden_data = tensor.matrix(name='init_hidden_data',
-                                     dtype=floatX)
+    # init hidden data (num_layers * num_samples *input_dims)
+    init_hidden_data = tensor.tensor3(name='init_hidden_data',
+                                      dtype=floatX)
 
-    # init cell data (num_samples *input_dims)
-    init_cell_data = tensor.matrix(name='init_hidden_data',
-                                   dtype=floatX)
+    # init cell data (num_layers * num_samples *input_dims)
+    init_cell_data = tensor.tensor3(name='init_cell_data',
+                                    dtype=floatX)
 
     # sampling length
     sampling_length = tensor.scalar(name='sampling_length',
@@ -259,6 +255,7 @@ def set_sample_generation_function(generator_rnn_model):
 
 def train_model(feature_size,
                 hidden_size,
+                num_layers,
                 generator_rnn_model,
                 generator_optimizer,
                 discriminator_rnn_model,
@@ -317,7 +314,7 @@ def train_model(feature_size,
             source_data.append(single_data)
             batch_size += 1
 
-            if batch_size<64:
+            if batch_size<128:
                 continue
             else:
                 source_data = numpy.asarray(source_data, dtype=floatX)
@@ -329,8 +326,8 @@ def train_model(feature_size,
 
             # set generator initial values
             init_input_data  = np_rng.uniform(low=-1.0, high=1.0, size=(source_data.shape[1], feature_size)).astype(floatX)
-            init_hidden_data = np_rng.uniform(low=-1.0, high=1.0, size=(source_data.shape[1], hidden_size)).astype(floatX)
-            init_cell_data   = np_rng.normal(size=(source_data.shape[1], hidden_size)).astype(floatX)
+            init_hidden_data = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
+            init_cell_data   = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
 
             # update generator
             generator_updater_input = [init_input_data,
@@ -343,8 +340,8 @@ def train_model(feature_size,
 
             # update discriminator
             init_input_data  = np_rng.uniform(low=-1.0, high=1.0, size=(source_data.shape[1], feature_size)).astype(floatX)
-            init_hidden_data = np_rng.uniform(low=-1.0, high=1.0, size=(source_data.shape[1], hidden_size)).astype(floatX)
-            init_cell_data   = np_rng.normal(size=(source_data.shape[1], hidden_size)).astype(floatX)
+            init_hidden_data = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
+            init_cell_data   = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
             discriminator_updater_input = [source_data,
                                            init_input_data,
                                            init_hidden_data,
@@ -371,10 +368,10 @@ def train_model(feature_size,
                                     save_as=model_name+'_model_cost.png',
                                     legend_pos='upper left')
 
-                # plot_learning_curve(cost_values=[input_cost_data.mean(axis=(1, 2)), sample_cost_data.mean(axis=(1, 2))],
-                #                     cost_names=['Data Distribution', 'Model Distribution'],
-                #                     save_as=model_name+'_seq_cost{}.png'.format(batch_idx),
-                #                     legend_pos='upper left')
+                plot_learning_curve(cost_values=[input_cost_data.mean(axis=(1, 2)), sample_cost_data.mean(axis=(1, 2))],
+                                    cost_names=['Data Distribution', 'Model Distribution'],
+                                    save_as=model_name+'_seq_cost{}.png'.format(batch_idx),
+                                    legend_pos='upper left')
 
 
             if batch_count%1000==0:
@@ -382,9 +379,9 @@ def train_model(feature_size,
                 num_sec     = 10
                 sampling_length = num_sec*sampling_rate/feature_size
                 # set generator initial values
-                init_input_data  = np_rng.uniform(low=-1.0, high=1.0, size=(num_samples, feature_size)).astype(floatX)
-                init_hidden_data = np_rng.uniform(low=-1.0, high=1.0, size=(num_samples, hidden_size)).astype(floatX)
-                init_cell_data   = np_rng.normal(size=(num_samples, hidden_size)).astype(floatX)
+                init_input_data  = np_rng.uniform(low=-1.0, high=1.0, size=(source_data.shape[1], feature_size)).astype(floatX)
+                init_hidden_data = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
+                init_cell_data   = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
 
                 generator_input = [init_input_data,
                                    init_hidden_data,
@@ -400,7 +397,7 @@ def train_model(feature_size,
                 save_wavfile(sample_data, model_name+'_sample')
 
 if __name__=="__main__":
-    feature_size  = 16
+    feature_size  = 160
     hidden_size   = 100
     learning_rate = 1e-3
     num_layers    = 1
@@ -413,12 +410,12 @@ if __name__=="__main__":
     # generator model
     generator_rnn_model = set_generator_recurrent_model(input_size=feature_size,
                                                         hidden_size=hidden_size,
-                                                        max_length=1000)
+                                                        num_layers=num_layers)
 
     # discriminator model
     discriminator_rnn_model = set_discriminator_recurrent_model(input_size=feature_size,
                                                                 hidden_size=hidden_size,
-                                                                num_layers=2)
+                                                                num_layers=num_layers)
     discriminator_output_model = set_discriminator_output_model(input_size=hidden_size)
 
     # set optimizer
@@ -428,6 +425,7 @@ if __name__=="__main__":
 
     train_model(feature_size=feature_size,
                 hidden_size=hidden_size,
+                num_layers=num_layers,
                 generator_rnn_model=generator_rnn_model,
                 generator_optimizer=generator_optimizer,
                 discriminator_rnn_model=discriminator_rnn_model,

@@ -95,14 +95,14 @@ def set_generator_update_function(generator_rnn_model,
                                                  is_training=True)[-1]
 
     # get discriminator output data
-    cost_data = get_tensor_output(input=discriminator_hidden_data,
-                                  layers=discriminator_output_model,
-                                  is_training=True)
+    sample_cost_data = get_tensor_output(input=discriminator_hidden_data,
+                                         layers=discriminator_output_model,
+                                         is_training=True)
 
     # get cost based on discriminator (binary cross-entropy over all data)
     # sum over generator cost over time_length and output_dims, then mean over samples
-    generator_cost = tensor.nnet.binary_crossentropy(output=cost_data,
-                                                     target=tensor.ones_like(cost_data)).sum(axis=(0, 2))
+    generator_cost = tensor.nnet.binary_crossentropy(output=sample_cost_data,
+                                                     target=tensor.ones_like(sample_cost_data)).sum(axis=2)
 
     # set generator update
     generator_updates_cost = generator_cost.mean()
@@ -118,7 +118,7 @@ def set_generator_update_function(generator_rnn_model,
                                  sampling_length]
 
     # set generator update outputs
-    generator_updates_outputs = [cost_data, generator_cost]
+    generator_updates_outputs = [sample_cost_data, generator_cost]
 
     # set generator update function
     generator_updates_function = theano.function(inputs=generator_updates_inputs,
@@ -186,9 +186,9 @@ def set_discriminator_update_function(generator_rnn_model,
     # get cost based on discriminator (binary cross-entropy over all data)
     # sum over discriminator cost over time_length and output_dims, then mean over samples
     discriminator_cost = (tensor.nnet.binary_crossentropy(output=input_cost_data,
-                                                          target=tensor.ones_like(input_cost_data)).sum(axis=(0, 2)) +
+                                                          target=tensor.ones_like(input_cost_data)).sum(axis=2) +
                           tensor.nnet.binary_crossentropy(output=sample_cost_data,
-                                                          target=tensor.zeros_like(sample_cost_data)).sum(axis=(0, 2)))
+                                                          target=tensor.zeros_like(sample_cost_data)).sum(axis=2))
 
     # set discriminator update
     discriminator_updates_cost = discriminator_cost.mean()
@@ -354,9 +354,10 @@ def train_model(feature_size,
             batch_count += 1
 
             if batch_count%10==0:
+                print '=============sample length {}============================='.format(window_size)
                 print 'epoch {}, batch_cnt {} => generator     cost {}'.format(e, batch_idx, generator_cost)
                 print 'epoch {}, batch_cnt {} => discriminator cost {}'.format(e, batch_idx, discriminator_cost)
-                print '=========================================================='
+
                 generator_cost_list.append(generator_cost)
                 discriminator_cost_list.append(discriminator_cost)
                 plot_learning_curve(cost_values=[generator_cost_list, discriminator_cost_list],

@@ -325,9 +325,12 @@ def train_model(feature_size,
             source_data = (source_data/(2.**15)).astype(floatX)
 
             # set generator initial values
-            init_input_data  = np_rng.uniform(low=-1.0, high=1.0, size=(source_data.shape[1], feature_size)).astype(floatX)
+            init_input_data  = np_rng.normal(size=(source_data.shape[1], hidden_size)).astype(floatX)
+            init_input_data  = numpy.clip(init_input_data, -1., 1.)
             init_hidden_data = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
+            init_hidden_data = numpy.clip(init_hidden_data, -1., 1.)
             init_cell_data   = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
+            init_cell_data   = numpy.clip(init_cell_data, -1., 1.)
 
             # update generator
             generator_updater_input = [init_input_data,
@@ -339,9 +342,12 @@ def train_model(feature_size,
             generator_cost = generator_updater_output[1].mean()
 
             # update discriminator
-            init_input_data  = np_rng.uniform(low=-1.0, high=1.0, size=(source_data.shape[1], feature_size)).astype(floatX)
+            init_input_data  = np_rng.normal(size=(source_data.shape[1], hidden_size)).astype(floatX)
+            init_input_data  = numpy.clip(init_input_data, -1., 1.)
             init_hidden_data = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
+            init_hidden_data = numpy.clip(init_hidden_data, -1., 1.)
             init_cell_data   = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
+            init_cell_data   = numpy.clip(init_cell_data, -1., 1.)
             discriminator_updater_input = [source_data,
                                            init_input_data,
                                            init_hidden_data,
@@ -379,9 +385,12 @@ def train_model(feature_size,
                 num_sec     = 10
                 sampling_length = num_sec*sampling_rate/feature_size
                 # set generator initial values
-                init_input_data  = np_rng.uniform(low=-1.0, high=1.0, size=(source_data.shape[1], feature_size)).astype(floatX)
-                init_hidden_data = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
-                init_cell_data   = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
+                init_input_data  = np_rng.normal(size=(num_samples, hidden_size)).astype(floatX)
+                init_input_data  = numpy.clip(init_input_data, -1., 1.)
+                init_hidden_data = np_rng.normal(size=(num_layers, num_samples, hidden_size)).astype(floatX)
+                init_hidden_data = numpy.clip(init_hidden_data, -1., 1.)
+                init_cell_data   = np_rng.normal(size=(num_layers, num_samples, hidden_size)).astype(floatX)
+                init_cell_data   = numpy.clip(init_cell_data, -1., 1.)
 
                 generator_input = [init_input_data,
                                    init_hidden_data,

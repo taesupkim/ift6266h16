@@ -283,6 +283,7 @@ def train_model(feature_size,
     # for each epoch
     generator_cost_list = []
     discriminator_cost_list = []
+
     for e in xrange(num_epochs):
         window_size = 100
 
@@ -293,12 +294,23 @@ def train_model(feature_size,
         data_iterator = data_stream.get_epoch_iterator()
 
         # for each batch
+        batch_cnt = 0
+        source_data = []
         for batch_idx, batch_data in enumerate(data_iterator):
+            if batch_cnt==0:
+                source_data = []
             # source data
-            source_data = batch_data[0]
-            source_data = source_data.reshape(window_size, feature_size)
-            source_data = numpy.expand_dims(source_data, axis=0)
-            source_data = numpy.swapaxes(source_data, axis1=0, axis2=1)
+            single_data = batch_data[0]
+            single_data = single_data.reshape(window_size, feature_size)
+            source_data.append(single_data)
+            batch_cnt += 1
+
+            if batch_cnt<64:
+                continue
+            else:
+                source_data = numpy.asarray(source_data, dtype=floatX)
+                source_data = numpy.swapaxes(source_data, axis1=0, axis2=1)
+                batch_cnt = 0
 
             # normalize
             source_data = (source_data/(2.**15)).astype(floatX)

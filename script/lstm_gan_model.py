@@ -94,6 +94,8 @@ def set_generator_update_function(generator_rnn_model,
                                                  layers=discriminator_rnn_model,
                                                  is_training=True)[-1]
 
+    discriminator_hidden_data = discriminator_hidden_data[-1]
+
     # get discriminator output data
     sample_cost_data = get_tensor_output(input=discriminator_hidden_data,
                                          layers=discriminator_output_model,
@@ -101,6 +103,8 @@ def set_generator_update_function(generator_rnn_model,
 
     # get cost based on discriminator (binary cross-entropy over all data)
     # sum over generator cost over time_length and output_dims, then mean over samples
+    # generator_cost = tensor.nnet.binary_crossentropy(output=sample_cost_data,
+    #                                                  target=tensor.ones_like(sample_cost_data)).sum(axis=2)
     generator_cost = tensor.nnet.binary_crossentropy(output=sample_cost_data,
                                                      target=tensor.ones_like(sample_cost_data)).sum(axis=2)
 
@@ -172,14 +176,14 @@ def set_discriminator_update_function(generator_rnn_model,
     # get discriminator input cost data
     input_cost_data = get_tensor_output(input=get_lstm_outputs(input_list=discriminator_input_data_list,
                                                                layers=discriminator_rnn_model,
-                                                               is_training=True)[-1],
+                                                               is_training=True)[-1][-1],
                                         layers=discriminator_output_model,
                                         is_training=True)
 
     # get discriminator sample cost data
     sample_cost_data = get_tensor_output(input=get_lstm_outputs(input_list=discriminator_sample_data_list,
                                                                 layers=discriminator_rnn_model,
-                                                                is_training=True)[-1],
+                                                                is_training=True)[-1][-1],
                                         layers=discriminator_output_model,
                                         is_training=True)
 

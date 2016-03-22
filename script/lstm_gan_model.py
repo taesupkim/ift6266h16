@@ -117,7 +117,6 @@ def set_generator_update_function(generator_rnn_model,
     generator_updates_inputs  = [init_input_data,
                                  init_hidden_data,
                                  init_cell_data,
-                                 init_cell_data,
                                  sampling_length]
 
     # set generator update outputs

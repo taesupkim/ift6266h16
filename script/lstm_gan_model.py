@@ -330,7 +330,7 @@ def train_model(feature_size,
 
 
 
-            if (batch_idx+1)%100==0:
+            if (batch_idx+1)%10==0:
                 print 'epoch {}, batch_idx {} => generator     cost {}'.format(e, batch_idx, generator_cost)
                 print '                       => discriminator cost {}'.format(e, batch_idx, discriminator_cost)
                 generator_cost_list.append(generator_cost)

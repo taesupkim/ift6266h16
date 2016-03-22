@@ -292,7 +292,7 @@ def train_model(feature_size,
 
     init_window_size = 20
     for e in xrange(num_epochs):
-        window_size = init_window_size + 5*(e+1)
+        window_size = init_window_size + 5*e
 
         # set data stream with proper length (window size)
         data_stream = set_datastream(feature_size=feature_size,
@@ -399,7 +399,7 @@ if __name__=="__main__":
     feature_size  = 160
     hidden_size   = 1000
     learning_rate = 1e-3
-    num_layers    = 2
+    num_layers    = 1
 
     model_name = 'lstm_gan' \
                  + '_FEATURE{}'.format(int(feature_size)) \

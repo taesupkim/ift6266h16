@@ -353,10 +353,12 @@ def train_model(feature_size,
 
             batch_count += 1
 
-            if batch_count%10==0:
+            if batch_count%100==0:
                 print '=============sample length {}============================='.format(window_size)
                 print 'epoch {}, batch_cnt {} => generator     cost {}'.format(e, batch_idx, generator_cost)
                 print 'epoch {}, batch_cnt {} => discriminator cost {}'.format(e, batch_idx, discriminator_cost)
+                print 'epoch {}, batch_cnt {} => input data    cost {}'.format(e, batch_idx, input_cost_data.mean())
+                print 'epoch {}, batch_cnt {} => sample data   cost {}'.format(e, batch_idx, sample_cost_data.mean())
 
                 generator_cost_list.append(generator_cost)
                 discriminator_cost_list.append(discriminator_cost)
@@ -371,7 +373,7 @@ def train_model(feature_size,
                                     legend_pos='upper left')
 
 
-            if batch_count%100==0:
+            if batch_count%1000==0:
                 num_samples = 10
                 num_sec     = 10
                 sampling_length = num_sec*sampling_rate/feature_size

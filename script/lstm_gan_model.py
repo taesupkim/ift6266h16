@@ -290,9 +290,9 @@ def train_model(feature_size,
     generator_cost_list = []
     discriminator_cost_list = []
 
-    init_window_size = 5
+    init_window_size = 20
     for e in xrange(num_epochs):
-        window_size = init_window_size*(e+1)
+        window_size = init_window_size + 5*(e+1)
 
         # set data stream with proper length (window size)
         data_stream = set_datastream(feature_size=feature_size,
@@ -416,7 +416,7 @@ if __name__=="__main__":
     discriminator_output_model = set_discriminator_output_model(input_size=hidden_size)
 
     # set optimizer
-    generator_optimizer     = RmsProp(learning_rate=learning_rate).update_params
+    generator_optimizer     = RmsProp(learning_rate=learning_rate*10.).update_params
     discriminator_optimizer = RmsProp(learning_rate=learning_rate).update_params
 
 

@@ -227,8 +227,6 @@ def train_model(feature_size,
             source_data = (source_data/(2.**15)).astype(floatX)
             target_data = (target_data/(2.**15)).astype(floatX)
 
-            print source_data.shape
-
             # update model
             update_input  = [source_data,
                              target_data]

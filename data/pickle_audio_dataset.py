@@ -45,11 +45,12 @@ def make_sequence_data(raw_data,
 
         if num_sequences<1:
             break
-        elif cur_offset is not 0 and cur_offset%total_sequence_length==0:
-            print 'skip : ', cur_offset
-            continue
         else:
             cnt += 1
+        if cur_offset is not 0 and cur_offset%total_sequence_length==0:
+            print 'skip : ', cur_offset
+            continue
+
 
 
         seq_data = seq_data[:(num_sequences*total_sequence_length)]

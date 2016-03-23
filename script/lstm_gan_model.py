@@ -4,7 +4,7 @@ import numpy
 from theano import tensor
 from data.window import Window
 from util.utils import save_wavfile
-from layer.activations import Tanh, Logistic
+from layer.activations import Tanh, Logistic, Relu
 from layer.layers import LinearLayer, LstmLayer, LstmLoopLayer
 from layer.layer_utils import get_tensor_output, get_model_updates, get_lstm_outputs
 from optimizer.rmsprop import RmsProp
@@ -35,7 +35,8 @@ def set_generator_recurrent_model(input_size,
     layers = []
     layers.append(LstmLoopLayer(input_dim=input_size,
                                 hidden_dim=hidden_size,
-                                num_layers=num_layers,
+                                num_rnn_layers=num_layers,
+                                num_lin_layers=num_layers,
                                 name='generator_rnn_model'))
     return layers
 
@@ -49,12 +50,20 @@ def set_discriminator_recurrent_model(input_size,
                                 name='discriminator_rnn_layer{}'.format(l)))
     return layers
 
-def set_discriminator_output_model(input_size):
+def set_discriminator_output_model(input_size,
+                                   num_layers):
     layers = []
+
+    for l in xrange(num_layers-1):
+        layers.append(LinearLayer(input_dim=input_size,
+                                  output_dim=input_size,
+                                  name='discriminator_output_linear_layer{}'.format(l)))
+        layers.append(Relu(name='discriminator_output_relu_layer{}'.format(l)))
+
     layers.append(LinearLayer(input_dim=input_size,
                               output_dim=1,
-                              name='discriminator_output_layer'))
-    layers.append(Logistic(name='discriminator_output_prob'))
+                              name='discriminator_output_linear_output'))
+    layers.append(Logistic(name='discriminator_output_logistic_output'))
     return layers
 
 def set_generator_update_function(generator_rnn_model,
@@ -362,10 +371,10 @@ def train_model(feature_size,
 
             if batch_count%100==0:
                 print '=============sample length {}============================='.format(window_size)
-                print 'epoch {}, batch_cnt {} => generator     cost {}'.format(e, batch_idx, generator_cost)
-                print 'epoch {}, batch_cnt {} => discriminator cost {}'.format(e, batch_idx, discriminator_cost)
-                print 'epoch {}, batch_cnt {} => input data    cost {}'.format(e, batch_idx, input_cost_data.mean())
-                print 'epoch {}, batch_cnt {} => sample data   cost {}'.format(e, batch_idx, sample_cost_data.mean())
+                print 'epoch {}, batch_cnt {} => generator     cost {}'.format(e, batch_count, generator_cost)
+                print 'epoch {}, batch_cnt {} => discriminator cost {}'.format(e, batch_count, discriminator_cost)
+                print 'epoch {}, batch_cnt {} => input data    cost {}'.format(e, batch_count, input_cost_data.mean())
+                print 'epoch {}, batch_cnt {} => sample data   cost {}'.format(e, batch_count, sample_cost_data.mean())
 
                 generator_cost_list.append(generator_cost)
                 discriminator_cost_list.append(discriminator_cost)
@@ -408,7 +417,7 @@ def train_model(feature_size,
 if __name__=="__main__":
     feature_size  = 160
     hidden_size   = 100
-    learning_rate = 1e-3
+    learning_rate = 1e-4
     num_layers    = 3
 
     model_name = 'lstm_gan' \
@@ -425,7 +434,8 @@ if __name__=="__main__":
     discriminator_rnn_model = set_discriminator_recurrent_model(input_size=feature_size,
                                                                 hidden_size=hidden_size,
                                                                 num_layers=num_layers)
-    discriminator_output_model = set_discriminator_output_model(input_size=hidden_size)
+    discriminator_output_model = set_discriminator_output_model(input_size=hidden_size,
+                                                                num_layers=num_layers)
 
     # set optimizer
     generator_optimizer     = RmsProp(learning_rate=learning_rate).update_params
@@ -440,5 +450,5 @@ if __name__=="__main__":
                 discriminator_rnn_model=discriminator_rnn_model,
                 discriminator_output_model=discriminator_output_model,
                 discriminator_optimizer=discriminator_optimizer,
-                num_epochs=100,
+                num_epochs=10,
                 model_name=model_name)

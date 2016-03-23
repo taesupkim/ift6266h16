@@ -38,15 +38,19 @@ def make_sequence_data(raw_data,
     cnt = 0
     while True:
         cur_offset = cnt*offset
-        print cur_offset
+
         seq_data = raw_data[cur_offset:]
         total_data_length = seq_data.shape[0]
         num_sequences = int(total_data_length/total_sequence_length)
 
-        if num_sequences<1 or cur_offset>total_sequence_length:
+        if num_sequences<1:
             break
+        elif cur_offset is not 0 and cur_offset%total_sequence_length==0:
+            print 'skip'
+            continue
         else:
             cnt += 1
+
 
         seq_data = seq_data[:(num_sequences*total_sequence_length)]
         seq_data = seq_data.reshape((num_sequences, total_sequence_length))
@@ -84,7 +88,7 @@ def build_sequence_data(raw_data,
 
     print 'pickle start'
     with open(data_set_path + '.pkl', "wb") as f:
-        pickle.dump((new_data, data_mean, data_var, data_min, data_max), f, pickle.HIGHEST_PROTOCOL)
+        pickle.dump([new_data, data_mean, data_var, data_min, data_max], f)
     print 'pickle done'
 
 

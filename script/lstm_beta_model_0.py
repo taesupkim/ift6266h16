@@ -66,8 +66,8 @@ def set_update_function(recurrent_model,
     # set target data (time_length * num_samples * output_dims)
     target_data = tensor.tensor3(name='target_data', dtype=floatX)
 
-    num_samples = input_data.shape[1]
     time_length = input_data.shape[0]
+    num_samples = input_data.shape[1]
 
     # cost control parameter
     controller = theano.shared(value=numpy.ones(shape=(1,), dtype=floatX),
@@ -222,6 +222,8 @@ def train_model(feature_size,
             # normalize
             source_data = (source_data/(2.**15)).astype(floatX)
             target_data = (target_data/(2.**15)).astype(floatX)
+
+            print source_data.shape
 
             # update model
             update_input  = [source_data,

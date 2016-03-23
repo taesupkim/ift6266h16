@@ -91,7 +91,7 @@ def set_update_function(recurrent_model,
     time_step = tensor.repeat(time_step, num_samples, axis=1)
 
     # cost_weight (time_length * num_samples)
-    cost_weight = tensor.transpose(-controller*time_step)
+    cost_weight = tensor.transpose(-1.0*time_step)
     cost_weight = tensor.nnet.softmax(cost_weight)
     cost_weight = tensor.transpose(cost_weight).reshape((time_length, num_samples))
 
@@ -99,18 +99,17 @@ def set_update_function(recurrent_model,
 
     # get model updates
     model_cost         = weighted_sample_cost.sum(axis=0).mean()
-
     model_updates_dict = get_model_updates(layers=recurrent_model+output_model,
                                            cost=model_cost,
                                            optimizer=model_optimizer,
                                            use_grad_clip=grad_clip)
 
-    controller_cost = weighted_sample_cost.var(axis=0).mean()
-
-    controller_updates_dict = OrderedDict()
-    controller_grad = tensor.grad(cost=controller_cost, wrt=controller)
-    for param, update in controller_optimizer(controller, controller_grad).iteritems():
-        controller_updates_dict[param] = update
+    # controller_cost = weighted_sample_cost.var(axis=0).mean()
+    #
+    # controller_updates_dict = OrderedDict()
+    # controller_grad = tensor.grad(cost=controller_cost, wrt=controller)
+    # for param, update in controller_optimizer(controller, controller_grad).iteritems():
+    #     controller_updates_dict[param] = update
 
 
     update_function_inputs  = [input_data,
@@ -120,8 +119,8 @@ def set_update_function(recurrent_model,
                                sample_cost,
                                controller.mean()]
 
-    update_function_updates = merge_dicts([model_updates_dict, controller_updates_dict])
-    # update_function_updates = model_updates_dict
+    # update_function_updates = merge_dicts([model_updates_dict, controller_updates_dict])
+    update_function_updates = model_updates_dict
 
     update_function = theano.function(inputs=update_function_inputs,
                                       outputs=update_function_outputs,

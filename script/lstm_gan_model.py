@@ -15,7 +15,7 @@ theano_rng = MRG_RandomStreams(42)
 np_rng = RandomState(42)
 
 floatX = theano.config.floatX
-sampling_rate = 160000
+sampling_rate = 16000
 
 def set_datastream(feature_size=16000,
                    window_size=100,
@@ -413,6 +413,9 @@ def train_model(feature_size,
                 sample_data = sample_data*(2.**15)
                 sample_data = sample_data.astype(numpy.int16)
                 save_wavfile(sample_data, model_name+'_sample')
+
+            if batch_count>10000:
+                break
 
 if __name__=="__main__":
     feature_size  = 160

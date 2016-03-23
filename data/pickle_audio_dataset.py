@@ -1,96 +1,102 @@
 from scipy.io import wavfile
 import cPickle as pickle
-import numpy as np
+import numpy
 
-def get_signal_data(file_path, file_name, dtype='int16'):
-    # sampling_rate : number of time steps for each second
-    sampling_rate, raw_data = wavfile.read(file_path + file_name)
-    raw_data = np.asarray(raw_data, dtype=dtype)
+train_idx  = 0
+train_size = 160000000
+test_idx   = train_size
+test_size  = 14229537
+
+# get signal data from wav file
+def get_signal_data(file_full_path, dtype='int16'):
+    # get sampling rate and signal data
+    sampling_rate, raw_data = wavfile.read(file_full_path)
+
+    # convert data type
+    raw_data = numpy.asarray(raw_data, dtype=dtype)
+
+    # full time length in seconds
     time_length = raw_data.shape[0]/sampling_rate
+
+    # return raw signal data, sampling rate, total length
     return [raw_data, sampling_rate, time_length]
 
-def get_data_size(single_time_length, sequence_time_length, sampling_rate):
-    input_size      = single_time_length*sampling_rate
-    sequence_length = sequence_time_length/single_time_length
-    return [input_size, sequence_length]
+# calculate sequence length
+def get_sequence_size(step_time_length=0.1,
+                      total_time_length=10.0,
+                      sampling_rate=160000.0):
+    input_step_size = step_time_length*sampling_rate
+    num_steps = total_time_length/step_time_length
 
-def split_data(raw_data, train_ratio):
-    data_size  = raw_data.shape[0]
-    train_data = raw_data[:int(data_size*train_ratio)]
-    valid_data = raw_data[int(data_size*train_ratio):]
+    return [input_step_size, num_steps]
 
-    return [train_data, valid_data]
+# convert raw data into a set of sequences
+def make_sequence_data(raw_data,
+                       offset_list,
+                       total_sequence_length=160000*10):
+    total_seq_data = numpy.empty(shape=(0, total_sequence_length))
+    for offset in offset_list:
+        seq_data = raw_data[offset:]
+        total_data_length = seq_data.shape[0]
+        num_sequences = int(total_data_length/total_sequence_length)
+        seq_data = seq_data.reshape(num_sequences, total_sequence_length)
+        total_seq_data = numpy.vstack([total_seq_data, seq_data])
+
+    return total_seq_data
+
+def get_subset_data(raw_data,
+                    start_idx,
+                    num_data):
+    return raw_data[start_idx:start_idx+num_data]
 
 def data_statics(raw_data):
-    data_mean = np.mean(raw_data)
-    data_min  = np.min(raw_data)
-    data_max  = np.max(raw_data)
-    return [data_mean, data_min, data_max]
+    data_mean = numpy.mean(raw_data)
+    data_var  = numpy.var(raw_data)
+    data_min  = numpy.min(raw_data)
+    data_max  = numpy.max(raw_data)
+    return [data_mean, data_var, data_min, data_max]
 
-def normalize_data(raw_data):
-    [data_mean, data_min, data_max] = data_statics(raw_data)
-    raw_data = (raw_data-data_min)/(data_max-data_min)
-    return [raw_data, data_min, data_max]
 
-def build_sequence_data(raw_data_set,
-                        input_size,
-                        sequence_timesteps,
-                        overlap,
-                        data_set_path,
-                        data_min_max):
-    seq_dataset = []
-    sequence_length = input_size*sequence_timesteps
-    for i in xrange(len(raw_data_set)):
-        seq_start_idx = 0
-        # seq_list = np.empty(shape=(1,sequence_length), dtype='int16')
-        seq_list = []
-        while True:
-            seq_end_idx = seq_start_idx + sequence_length
-            if seq_end_idx>=raw_data_set[i].shape[0]:
-                break
-            seq_data = raw_data_set[i][seq_start_idx:seq_end_idx]
-            # seq_list = np.vstack((seq_list, seq_data))
-            seq_list.append(seq_data)
-            seq_start_idx += overlap
-        print len(seq_list), seq_list[0].dtype
-        # seq_list = np.asarray(a=seq_list, dtype='int16',)
-        seq_dataset.append(seq_list)
-        print 'sequence data set shape : ({}, {})'.format(len(seq_list),
-                                                          seq_list[0].shape[0])
+def build_sequence_data(raw_data,
+                        total_sequence_length,
+                        offset_list,
+                        data_set_path):
+    [data_mean, data_var, data_min, data_max] = data_statics(raw_data)
+    raw_data = make_sequence_data(raw_data,
+                                  offset_list,
+                                  total_sequence_length)
+
+    print 'sequence data shape : ({}, {})'.format(raw_data.shape[0],
+                                                  raw_data.shape[1])
 
     print 'pickle start'
     with open(data_set_path + '.pkl', "wb") as f:
-        pickle.dump((seq_dataset, data_min_max[0], data_min_max[1]), f, pickle.HIGHEST_PROTOCOL )
+        pickle.dump((raw_data, data_mean, data_var, data_min, data_max), f, pickle.HIGHEST_PROTOCOL )
     print 'pickle done'
 
 
 
 if __name__=="__main__":
-    file_path = '/data/lisatmp4/taesup/data/YouTubeAudio/'
-    file_name = 'XqaJ2Ol5cC4.wav'
-    train_ratio = 0.7
-    # read data
-    [raw_data, sampling_rate, time_length] = get_signal_data(file_path, file_name)
-    [data_mean, data_min, data_max] = data_statics(raw_data)
-    [train_raw_data, valid_raw_data] = split_data(raw_data, train_ratio)
+    file_path = '/data/lisatmp4/taesup/data/YouTubeAudio/XqaJ2Ol5cC4.wav'
 
-    # dataset type
-    single_time_length_list   = [0.01, 0.05] #sec
-    sequence_time_length_list = [10, 50] #sec
+    for t in [5, 10, 20]:
+        total_time_length = t
+        print 'start with training data construction'
+        [raw_data, sampling_rate, time_length] = get_signal_data(file_path)
+        raw_data = get_subset_data(raw_data,
+                                   train_idx,
+                                   train_size)
+        build_sequence_data(raw_data,
+                            total_time_length*sampling_rate,
+                            [0, sampling_rate/2],
+                            '/data/lisatmp4/taesup/data/YouTubeAudio/XqaJ2Ol5cC4_train_{}s'.format(total_time_length))
 
-    for single_time_length in single_time_length_list:
-        for sequence_time_length in sequence_time_length_list:
-            # get data size
-            [input_size, sequence_length] = get_data_size(single_time_length,
-                                                          sequence_time_length,
-                                                          sampling_rate)
-
-            data_set_path = file_path + 'audio_input{}seq{}'.format(int(input_size),
-                                                                    int(sequence_length))
-            # build dataset
-            build_sequence_data([train_raw_data, valid_raw_data],
-                                input_size,
-                                sequence_length,
-                                input_size/2,
-                                data_set_path,
-                                [data_min, data_max])
+    print 'start with testing data construction'
+    [raw_data, sampling_rate, time_length] = get_signal_data(file_path)
+    raw_data = get_subset_data(raw_data,
+                               test_idx,
+                               test_size)
+    build_sequence_data(raw_data,
+                        test_size,
+                        [0,],
+                        '/data/lisatmp4/taesup/data/YouTubeAudio/XqaJ2Ol5cC4_test')

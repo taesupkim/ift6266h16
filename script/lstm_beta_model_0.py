@@ -202,11 +202,11 @@ def train_model(feature_size,
                 source_data = []
             # source data
             single_data = batch_data[0]
-            single_data = single_data.reshape(window_size, feature_size)
+            single_data = single_data.reshape(time_size, feature_size)
             source_data.append(single_data)
             # target data
             single_data = batch_data[1]
-            single_data = single_data.reshape(window_size, feature_size)
+            single_data = single_data.reshape(time_size, feature_size)
             target_data.append(single_data)
             batch_size += 1
 
@@ -222,6 +222,8 @@ def train_model(feature_size,
             # normalize
             source_data = (source_data/(2.**15)).astype(floatX)
             target_data = (target_data/(2.**15)).astype(floatX)
+
+            print source_data.shape, target_data.shape
 
             # update model
             update_input  = [source_data,

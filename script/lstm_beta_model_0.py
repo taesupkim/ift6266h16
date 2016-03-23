@@ -118,7 +118,6 @@ def set_update_function(recurrent_model,
     update_function_outputs = [hidden_data,
                                output_data,
                                sample_cost,
-                               time_step,
                                controller.mean()]
 
     update_function_updates = merge_dicts([model_updates_dict, controller_updates_dict])

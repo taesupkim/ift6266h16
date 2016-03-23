@@ -106,7 +106,7 @@ if __name__=="__main__":
                                    train_size)
         build_sequence_data(raw_data,
                             total_time_length*sampling_rate,
-                            int(total_time_length*sampling_rate*0.7),
+                            int(total_time_length*sampling_rate*0.5),
                             '/data/lisatmp4/taesup/data/YouTubeAudio/XqaJ2Ol5cC4_train_{}s'.format(total_time_length))
 
     print 'start with testing data construction'

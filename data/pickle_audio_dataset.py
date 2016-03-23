@@ -55,6 +55,8 @@ def make_sequence_data(raw_data,
         seq_data = seq_data.reshape((num_sequences, total_sequence_length))
         total_seq_data = numpy.vstack([total_seq_data, seq_data])
 
+        print total_seq_data.shape[0]
+
         if total_seq_data.shape[0]>1000000:
             break
 

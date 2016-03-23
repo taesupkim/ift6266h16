@@ -70,7 +70,7 @@ def set_update_function(recurrent_model,
     num_samples = input_data.shape[1]
 
     # cost control parameter
-    controller = theano.shared(value=numpy.ones(shape=(1,), dtype=floatX),
+    controller = theano.shared(value=1.0,
                                name='controller')
 
     # get hidden data
@@ -91,7 +91,7 @@ def set_update_function(recurrent_model,
     time_step = tensor.repeat(time_step, num_samples, axis=1)
 
     # cost_weight (time_length * num_samples)
-    cost_weight = tensor.transpose(-1.0*time_step)
+    cost_weight = tensor.transpose(-controller*time_step)
     cost_weight = tensor.nnet.softmax(cost_weight)
     cost_weight = tensor.transpose(cost_weight).reshape((time_length, num_samples))
 

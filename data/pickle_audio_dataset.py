@@ -39,7 +39,7 @@ def make_sequence_data(raw_data,
         seq_data = raw_data[offset:]
         total_data_length = seq_data.shape[0]
         num_sequences = int(total_data_length/total_sequence_length)
-        print num_sequences, total_sequence_length, num_sequences*total_sequence_length, total_data_length
+        seq_data = seq_data[:(num_sequences*total_sequence_length)]
         seq_data = seq_data.reshape((num_sequences, total_sequence_length))
         total_seq_data = numpy.vstack([total_seq_data, seq_data])
 

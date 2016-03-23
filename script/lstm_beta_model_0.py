@@ -85,7 +85,7 @@ def set_update_function(recurrent_model,
 
     # get cost (here mask_seq is like weight, sum over feature, and time)
     sample_cost = tensor.sqr(output_data-target_data)
-    sample_cost = tensor.sum(input=sample_cost, axis=2)
+    sample_cost = tensor.sum(input=sample_cost, axis=2).reshape((time_length, num_samples))
 
     time_step = tensor.arange(time_length).reshape((time_length, 1))
     time_step = tensor.repeat(time_step, num_samples, axis=1)
@@ -93,7 +93,7 @@ def set_update_function(recurrent_model,
     # cost_weight (time_length * num_samples)
     cost_weight = tensor.transpose(-controller*time_step)
     cost_weight = tensor.nnet.softmax(cost_weight)
-    cost_weight = tensor.transpose(cost_weight)
+    cost_weight = tensor.transpose(cost_weight).reshape((time_length, num_samples))
 
     weighted_sample_cost = cost_weight*sample_cost
 
@@ -222,8 +222,6 @@ def train_model(feature_size,
             # normalize
             source_data = (source_data/(2.**15)).astype(floatX)
             target_data = (target_data/(2.**15)).astype(floatX)
-
-            print source_data.shape, target_data.shape
 
             # update model
             update_input  = [source_data,

@@ -32,16 +32,28 @@ def get_sequence_size(step_time_length=0.1,
 
 # convert raw data into a set of sequences
 def make_sequence_data(raw_data,
-                       offset_list,
+                       offset,
                        total_sequence_length):
     total_seq_data = numpy.empty(shape=(0, total_sequence_length))
-    for offset in offset_list:
-        seq_data = raw_data[offset:]
+    cnt = 0
+    while True:
+        cur_offset = cnt*offset
+        print cur_offset
+        seq_data = raw_data[cur_offset:]
         total_data_length = seq_data.shape[0]
         num_sequences = int(total_data_length/total_sequence_length)
+
+        if num_sequences<1:
+            break
+        else:
+            cnt += 1
+
         seq_data = seq_data[:(num_sequences*total_sequence_length)]
         seq_data = seq_data.reshape((num_sequences, total_sequence_length))
         total_seq_data = numpy.vstack([total_seq_data, seq_data])
+
+        if offset==0:
+            break
 
     return total_seq_data
 
@@ -60,19 +72,19 @@ def data_statics(raw_data):
 
 def build_sequence_data(raw_data,
                         total_sequence_length,
-                        offset_list,
+                        offset,
                         data_set_path):
     [data_mean, data_var, data_min, data_max] = data_statics(raw_data)
-    raw_data = make_sequence_data(raw_data,
-                                  offset_list,
+    new_data = make_sequence_data(raw_data,
+                                  offset,
                                   total_sequence_length)
 
-    print 'sequence data shape : ({}, {})'.format(raw_data.shape[0],
-                                                  raw_data.shape[1])
+    print 'sequence data shape : ({}, {})'.format(new_data.shape[0],
+                                                  new_data.shape[1])
 
     print 'pickle start'
     with open(data_set_path + '.pkl', "wb") as f:
-        pickle.dump((raw_data, data_mean, data_var, data_min, data_max), f, pickle.HIGHEST_PROTOCOL )
+        pickle.dump((new_data, data_mean, data_var, data_min, data_max), f, pickle.HIGHEST_PROTOCOL)
     print 'pickle done'
 
 
@@ -89,7 +101,7 @@ if __name__=="__main__":
                                    train_size)
         build_sequence_data(raw_data,
                             total_time_length*sampling_rate,
-                            [0, sampling_rate/2],
+                            int(total_time_length*sampling_rate*0.7),
                             '/data/lisatmp4/taesup/data/YouTubeAudio/XqaJ2Ol5cC4_train_{}s'.format(total_time_length))
 
     print 'start with testing data construction'
@@ -99,5 +111,5 @@ if __name__=="__main__":
                                test_size)
     build_sequence_data(raw_data,
                         test_size,
-                        [0,],
+                        0,
                         '/data/lisatmp4/taesup/data/YouTubeAudio/XqaJ2Ol5cC4_test')

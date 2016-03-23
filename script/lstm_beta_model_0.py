@@ -87,7 +87,7 @@ def set_update_function(recurrent_model,
     sample_cost = tensor.sqr(output_data-target_data)
     sample_cost = tensor.sum(input=sample_cost, axis=2).reshape((time_length, num_samples))
 
-    time_step = tensor.arange(time_length).reshape((time_length, 1))
+    time_step = tensor.arange(start=0, stop=time_length, dtype=floatX).reshape((time_length, 1))
     time_step = tensor.repeat(time_step, num_samples, axis=1)
 
     # cost_weight (time_length * num_samples)

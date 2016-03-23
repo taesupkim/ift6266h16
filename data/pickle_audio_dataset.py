@@ -81,7 +81,7 @@ if __name__=="__main__":
 
     for t in [5, 10, 20]:
         total_time_length = t
-        print 'start with training data construction'
+        print 'start with training data construction : {} seconds'.format(t)
         [raw_data, sampling_rate, time_length] = get_signal_data(file_path)
         raw_data = get_subset_data(raw_data,
                                    train_idx,

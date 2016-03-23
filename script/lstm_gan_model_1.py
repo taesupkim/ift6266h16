@@ -95,8 +95,8 @@ def set_generator_update_function(generator_rnn_model,
     # get generator output data
     output_data = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)[0]
 
-    noise_data  = theano_rng.normal(size=output_data.shape, std=0.1)
-    output_data = tensor.clip(output_data+noise_data, -1., 1.)
+    # noise_data  = theano_rng.normal(size=output_data.shape, std=0.1)
+    # output_data = tensor.clip(output_data+noise_data, -1., 1.)
 
     # set discriminator input data list
     discriminator_input_data_list = [output_data,]
@@ -421,9 +421,9 @@ def train_model(feature_size,
                 break
 
 if __name__=="__main__":
-    feature_size  = 160
+    feature_size  = 16
     hidden_size   = 100
-    learning_rate = 1e-4
+    learning_rate = 1e-3
     num_layers    = 2
 
     model_name = 'lstm_gan' \

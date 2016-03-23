@@ -43,7 +43,7 @@ def make_sequence_data(raw_data,
         total_data_length = seq_data.shape[0]
         num_sequences = int(total_data_length/total_sequence_length)
 
-        if num_sequences<1:
+        if num_sequences<1 or cur_offset>total_sequence_length:
             break
         else:
             cnt += 1

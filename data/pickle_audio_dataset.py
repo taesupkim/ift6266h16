@@ -33,13 +33,13 @@ def get_sequence_size(step_time_length=0.1,
 # convert raw data into a set of sequences
 def make_sequence_data(raw_data,
                        offset_list,
-                       total_sequence_length=160000*10):
+                       total_sequence_length):
     total_seq_data = numpy.empty(shape=(0, total_sequence_length))
     for offset in offset_list:
         seq_data = raw_data[offset:]
         total_data_length = seq_data.shape[0]
         num_sequences = int(total_data_length/total_sequence_length)
-        seq_data = seq_data.reshape(num_sequences, total_sequence_length)
+        seq_data = seq_data.reshape((num_sequences, total_sequence_length))
         total_seq_data = numpy.vstack([total_seq_data, seq_data])
 
     return total_seq_data

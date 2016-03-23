@@ -51,11 +51,12 @@ def make_sequence_data(raw_data,
             print 'skip : ', cur_offset
             continue
 
-
-
         seq_data = seq_data[:(num_sequences*total_sequence_length)]
         seq_data = seq_data.reshape((num_sequences, total_sequence_length))
         total_seq_data = numpy.vstack([total_seq_data, seq_data])
+
+        if total_seq_data.shape[0]>1000000:
+            break
 
         if offset==0:
             break

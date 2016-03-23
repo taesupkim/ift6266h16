@@ -34,7 +34,7 @@ def set_output_model(input_size,
     layers = []
     for l in xrange(num_layers):
         layers.append(LinearLayer(input_dim=input_size,
-                                  output_dim=output_size,
+                                  output_dim=output_size if l is (num_layers-1) else input_size,
                                   name='output_layer{}'.format(l)))
         if l is (num_layers-1):
             layers.append(Tanh(name='output_squeeze_layer{}'.format(l)))

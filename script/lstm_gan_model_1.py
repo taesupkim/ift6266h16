@@ -96,7 +96,7 @@ def set_generator_update_function(generator_rnn_model,
     output_data = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)[0]
 
     noise_data  = theano_rng.normal(size=output_data.shape, std=0.1)
-    output_data = tensor.clip(output_data+noise_data -1., 1.)
+    output_data = tensor.clip(output_data+noise_data, -1., 1.)
 
     # set discriminator input data list
     discriminator_input_data_list = [output_data,]

@@ -275,7 +275,7 @@ if __name__=="__main__":
     feature_size  = 160
     window_size   = 100
     hidden_size   = 240
-    learning_rate = 1e-4
+    learning_rate = 1e-2
     num_layers    = 2
 
     model_name = 'lstm_controller_layer' \

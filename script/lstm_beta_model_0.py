@@ -99,7 +99,7 @@ def set_update_function(recurrent_model,
 
     # get model updates
     # model_cost         = weighted_sample_cost.sum(axis=0).mean()
-    model_cost         = sample_cost.mean()
+    model_cost         = sample_cost.max(axis=0).mean()
     model_updates_dict = get_model_updates(layers=recurrent_model+output_model,
                                            cost=model_cost,
                                            optimizer=model_optimizer,

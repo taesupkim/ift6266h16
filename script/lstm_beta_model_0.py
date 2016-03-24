@@ -274,7 +274,7 @@ if __name__=="__main__":
     youtube_id    = 'XqaJ2Ol5cC4'
     feature_size  = 160
     window_size   = 100
-    hidden_size   = 100
+    hidden_size   = 240
     learning_rate = 1e-3
     num_layers    = 2
 
@@ -291,7 +291,7 @@ if __name__=="__main__":
                                           num_layers=num_layers)
     output_model    = set_output_model(input_size=hidden_size,
                                        output_size=feature_size,
-                                       num_layers=num_layers)
+                                       num_layers=1)
 
     # set optimizer
     model_optimizer      = RmsProp(learning_rate=learning_rate).update_params

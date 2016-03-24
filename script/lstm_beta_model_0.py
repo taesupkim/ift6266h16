@@ -232,8 +232,6 @@ def train_model(feature_size,
 
             # update result
             sample_cost = update_output[2]
-            # print update_output[3].shape
-            controller  = update_output[3].mean()
 
 
             batch_count += 1

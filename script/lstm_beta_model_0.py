@@ -87,40 +87,40 @@ def set_update_function(recurrent_model,
     sample_cost = tensor.sqr(output_data-target_data)
     sample_cost = tensor.sum(input=sample_cost, axis=2).reshape((time_length, num_samples))
 
-    time_step = tensor.arange(start=0, stop=time_length, dtype=floatX).reshape((time_length, 1))
-    time_step = tensor.repeat(time_step, num_samples, axis=1)
+    # time_step = tensor.arange(start=0, stop=time_length, dtype=floatX).reshape((time_length, 1))
+    # time_step = tensor.repeat(time_step, num_samples, axis=1)
 
     # cost_weight (time_length * num_samples)
-    cost_weight = tensor.transpose(-controller*time_step)
-    cost_weight = tensor.nnet.softmax(cost_weight)
-    cost_weight = tensor.transpose(cost_weight).reshape((time_length, num_samples))
+    # cost_weight = tensor.transpose(-controller*time_step)
+    # cost_weight = tensor.nnet.softmax(cost_weight)
+    # cost_weight = tensor.transpose(cost_weight).reshape((time_length, num_samples))
 
-    weighted_sample_cost = cost_weight*sample_cost
+    # weighted_sample_cost = cost_weight*sample_cost
 
     # get model updates
-    model_cost         = weighted_sample_cost.sum(axis=0).mean()
+    # model_cost         = weighted_sample_cost.sum(axis=0).mean()
+    model_cost         = sample_cost.max(axis=0).mean()
     model_updates_dict = get_model_updates(layers=recurrent_model+output_model,
                                            cost=model_cost,
                                            optimizer=model_optimizer,
                                            use_grad_clip=grad_clip)
 
-    controller_cost = weighted_sample_cost.var(axis=0).mean()
-
-    controller_updates_dict = OrderedDict()
-    controller_grad = tensor.grad(cost=controller_cost, wrt=controller)
-    for param, update in controller_optimizer(controller, controller_grad).iteritems():
-        controller_updates_dict[param] = update
+    # controller_cost = weighted_sample_cost.var(axis=0).mean()
+    #
+    # controller_updates_dict = OrderedDict()
+    # controller_grad = tensor.grad(cost=controller_cost, wrt=controller)
+    # for param, update in controller_optimizer(controller, controller_grad).iteritems():
+    #     controller_updates_dict[param] = update
 
 
     update_function_inputs  = [input_data,
                                target_data]
     update_function_outputs = [hidden_data,
                                output_data,
-                               sample_cost,
-                               controller.mean()]
+                               sample_cost]
 
-    update_function_updates = merge_dicts([model_updates_dict, controller_updates_dict])
-    # update_function_updates = model_updates_dict
+    # update_function_updates = merge_dicts([model_updates_dict, controller_updates_dict])
+    update_function_updates = model_updates_dict
 
     update_function = theano.function(inputs=update_function_inputs,
                                       outputs=update_function_outputs,
@@ -231,7 +231,7 @@ def train_model(feature_size,
             update_output = update_function(*update_input)
 
             # update result
-            sample_cost = update_output[2].mean()
+            sample_cost = update_output[2]
             # print update_output[3].shape
             controller  = update_output[3].mean()
 
@@ -239,8 +239,8 @@ def train_model(feature_size,
             batch_count += 1
 
             if batch_count%100==0:
-                print 'epoch {}, batch_count {} : cost {} controller {})'.format(e, batch_count, sample_cost, controller)
-                cost_list.append(sample_cost)
+                print 'epoch {}, batch_count {} : mean cost {} max cost {})'.format(e, batch_count, sample_cost.mean(), sample_cost.max(axis=0).mean())
+                cost_list.append(sample_cost.mean())
 
             if (batch_count+1)%100==0:
                 plot_learning_curve(cost_values=[cost_list,],

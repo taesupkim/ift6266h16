@@ -274,7 +274,7 @@ if __name__=="__main__":
     youtube_id    = 'XqaJ2Ol5cC4'
     feature_size  = 160
     window_size   = 100
-    hidden_size   = 20
+    hidden_size   = 100
     learning_rate = 1e-3
     num_layers    = 2
 

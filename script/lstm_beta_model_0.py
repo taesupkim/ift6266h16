@@ -252,7 +252,7 @@ def train_model(feature_size,
                 generation_sample = 10
                 generation_length = 100
                 input_data  = numpy.clip(np_rng.normal(size=(generation_sample, feature_size)).astype(floatX), -1., 1.)
-                hidden_data_list = [numpy.clip(np_rng.normal(size=(generation_sample, feature_size)).astype(floatX), -1., 1.) for l in xrange(num_layers)]
+                hidden_data_list = [numpy.clip(np_rng.normal(size=(generation_sample, hidden_size)).astype(floatX), -1., 1.) for l in xrange(num_layers)]
                 cell_data_list   = [numpy.zeros(shape=(generation_sample, hidden_size)).astype(floatX) for l in xrange(num_layers)]
                 output_data = numpy.zeros(shape=(generation_length, generation_sample, feature_size))
 

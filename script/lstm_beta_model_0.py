@@ -273,7 +273,7 @@ def train_model(feature_size,
 if __name__=="__main__":
     youtube_id    = 'XqaJ2Ol5cC4'
     feature_size  = 160
-    window_size   = 100
+    window_size   = 20
     hidden_size   = 240
     learning_rate = 1e-2
     num_layers    = 2

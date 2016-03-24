@@ -181,23 +181,23 @@ def set_discriminator_update_function(generator_rnn_model,
     # get discriminator input cost data
     input_cost_data = get_tensor_output(input=get_lstm_outputs(input_list=discriminator_input_data_list,
                                                                layers=discriminator_rnn_model,
-                                                               is_training=True)[-1][-1],
+                                                               is_training=True)[-1],
                                         layers=discriminator_output_model,
                                         is_training=True)
 
     # get discriminator sample cost data
     sample_cost_data = get_tensor_output(input=get_lstm_outputs(input_list=discriminator_sample_data_list,
                                                                 layers=discriminator_rnn_model,
-                                                                is_training=True)[-1][-1],
+                                                                is_training=True)[-1],
                                         layers=discriminator_output_model,
                                         is_training=True)
 
     # get cost based on discriminator (binary cross-entropy over all data)
     # sum over discriminator cost over time_length and output_dims, then mean over samples
     discriminator_cost = (tensor.nnet.binary_crossentropy(output=input_cost_data,
-                                                          target=tensor.ones_like(input_cost_data)).sum(axis=1) +
+                                                          target=tensor.ones_like(input_cost_data)).sum(axis=2) +
                           tensor.nnet.binary_crossentropy(output=sample_cost_data,
-                                                          target=tensor.zeros_like(sample_cost_data)).sum(axis=1))
+                                                          target=tensor.zeros_like(sample_cost_data)).sum(axis=2))
 
     # set discriminator update
     discriminator_updates_cost = discriminator_cost.mean()
@@ -383,10 +383,10 @@ def train_model(feature_size,
                                     save_as=model_name+'_model_cost.png',
                                     legend_pos='upper left')
 
-                # plot_learning_curve(cost_values=[input_cost_data.mean(axis=(1, 2)), sample_cost_data.mean(axis=(1, 2))],
-                #                     cost_names=['Data Distribution', 'Model Distribution'],
-                #                     save_as=model_name+'_seq_cost{}.png'.format(batch_count),
-                #                     legend_pos='upper left')
+                plot_learning_curve(cost_values=[input_cost_data.mean(axis=(1, 2)), sample_cost_data.mean(axis=(1, 2))],
+                                    cost_names=['Data Distribution', 'Model Distribution'],
+                                    save_as=model_name+'_seq_cost{}.png'.format(batch_count),
+                                    legend_pos='upper left')
 
 
             if batch_count%1000==0:
@@ -439,7 +439,7 @@ if __name__=="__main__":
                                                                 hidden_size=hidden_size,
                                                                 num_layers=num_layers)
     discriminator_output_model = set_discriminator_output_model(input_size=hidden_size,
-                                                                num_layers=num_layers)
+                                                                num_layers=1)
 
     # set optimizer
     generator_optimizer     = RmsProp(learning_rate=learning_rate*10).update_params

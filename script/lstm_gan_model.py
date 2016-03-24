@@ -383,10 +383,10 @@ def train_model(feature_size,
                                     save_as=model_name+'_model_cost.png',
                                     legend_pos='upper left')
 
-                plot_learning_curve(cost_values=[input_cost_data.mean(axis=(1, 2)), sample_cost_data.mean(axis=(1, 2))],
-                                    cost_names=['Data Distribution', 'Model Distribution'],
-                                    save_as=model_name+'_seq_cost{}.png'.format(batch_count),
-                                    legend_pos='upper left')
+                # plot_learning_curve(cost_values=[input_cost_data.mean(axis=(1, 2)), sample_cost_data.mean(axis=(1, 2))],
+                #                     cost_names=['Data Distribution', 'Model Distribution'],
+                #                     save_as=model_name+'_seq_cost{}.png'.format(batch_count),
+                #                     legend_pos='upper left')
 
 
             if batch_count%1000==0:

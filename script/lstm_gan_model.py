@@ -300,7 +300,7 @@ def train_model(feature_size,
     generator_cost_list = []
     discriminator_cost_list = []
 
-    init_window_size = 5
+    init_window_size = 20
     for e in xrange(num_epochs):
         window_size = init_window_size + 5*e
 

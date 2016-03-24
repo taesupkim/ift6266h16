@@ -181,23 +181,23 @@ def set_discriminator_update_function(generator_rnn_model,
     # get discriminator input cost data
     input_cost_data = get_tensor_output(input=get_lstm_outputs(input_list=discriminator_input_data_list,
                                                                layers=discriminator_rnn_model,
-                                                               is_training=True)[-1],
+                                                               is_training=True)[-1][-1],
                                         layers=discriminator_output_model,
                                         is_training=True)
 
     # get discriminator sample cost data
     sample_cost_data = get_tensor_output(input=get_lstm_outputs(input_list=discriminator_sample_data_list,
                                                                 layers=discriminator_rnn_model,
-                                                                is_training=True)[-1],
+                                                                is_training=True)[-1][-1],
                                         layers=discriminator_output_model,
                                         is_training=True)
 
     # get cost based on discriminator (binary cross-entropy over all data)
     # sum over discriminator cost over time_length and output_dims, then mean over samples
     discriminator_cost = (tensor.nnet.binary_crossentropy(output=input_cost_data,
-                                                          target=tensor.ones_like(input_cost_data)).sum(axis=2) +
+                                                          target=tensor.ones_like(input_cost_data)).sum(axis=1) +
                           tensor.nnet.binary_crossentropy(output=sample_cost_data,
-                                                          target=tensor.zeros_like(sample_cost_data)).sum(axis=2))
+                                                          target=tensor.zeros_like(sample_cost_data)).sum(axis=1))
 
     # set discriminator update
     discriminator_updates_cost = discriminator_cost.mean()
@@ -442,7 +442,7 @@ if __name__=="__main__":
                                                                 num_layers=num_layers)
 
     # set optimizer
-    generator_optimizer     = RmsProp(learning_rate=learning_rate).update_params
+    generator_optimizer     = RmsProp(learning_rate=learning_rate*10).update_params
     discriminator_optimizer = RmsProp(learning_rate=learning_rate).update_params
 
 

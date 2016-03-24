@@ -50,7 +50,7 @@ def set_datastream(window_size=100,
     data_stream = Window(offset=offset,
                          source_window=window_size*offset,
                          target_window=window_size*offset,
-                         overlapping=True,
+                         overlapping=False,
                          data_stream=data_stream)
     return data_stream
 

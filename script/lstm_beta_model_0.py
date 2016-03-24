@@ -275,7 +275,7 @@ if __name__=="__main__":
     feature_size  = 160
     window_size   = 20
     hidden_size   = 240
-    learning_rate = 1e-2
+    learning_rate = 1e-3
     num_layers    = 2
 
     model_name = 'lstm_controller_layer' \
@@ -291,7 +291,7 @@ if __name__=="__main__":
                                           num_layers=num_layers)
     output_model    = set_output_model(input_size=hidden_size,
                                        output_size=feature_size,
-                                       num_layers=1)
+                                       num_layers=2)
 
     # set optimizer
     model_optimizer      = RmsProp(learning_rate=learning_rate).update_params

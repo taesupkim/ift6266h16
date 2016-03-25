@@ -339,7 +339,6 @@ def train_model(feature_size,
             init_hidden_data = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
             init_hidden_data = numpy.clip(init_hidden_data, -1., 1.)
             init_cell_data   = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
-            init_cell_data   = numpy.clip(init_cell_data, -1., 1.)
 
             # update generator
             generator_updater_input = [init_input_data,
@@ -356,7 +355,7 @@ def train_model(feature_size,
             init_hidden_data = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
             init_hidden_data = numpy.clip(init_hidden_data, -1., 1.)
             init_cell_data   = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
-            init_cell_data   = numpy.clip(init_cell_data, -1., 1.)
+
             discriminator_updater_input = [source_data,
                                            init_input_data,
                                            init_hidden_data,
@@ -369,7 +368,7 @@ def train_model(feature_size,
 
             batch_count += 1
 
-            if batch_count%100==0:
+            if batch_count%500==0:
                 print '=============sample length {}============================='.format(window_size)
                 print 'epoch {}, batch_cnt {} => generator     cost {}'.format(e, batch_count, generator_cost)
                 print 'epoch {}, batch_cnt {} => discriminator cost {}'.format(e, batch_count, discriminator_cost)
@@ -389,7 +388,7 @@ def train_model(feature_size,
                                     legend_pos='upper left')
 
 
-            if batch_count%1000==0:
+            if batch_count%5000==0:
                 num_samples = 10
                 num_sec     = 10
                 sampling_length = num_sec*sampling_rate/feature_size
@@ -399,7 +398,6 @@ def train_model(feature_size,
                 init_hidden_data = np_rng.normal(size=(num_layers, num_samples, hidden_size)).astype(floatX)
                 init_hidden_data = numpy.clip(init_hidden_data, -1., 1.)
                 init_cell_data   = np_rng.normal(size=(num_layers, num_samples, hidden_size)).astype(floatX)
-                init_cell_data   = numpy.clip(init_cell_data, -1., 1.)
 
                 generator_input = [init_input_data,
                                    init_hidden_data,
@@ -413,9 +411,6 @@ def train_model(feature_size,
                 sample_data = sample_data*(2.**15)
                 sample_data = sample_data.astype(numpy.int16)
                 save_wavfile(sample_data, model_name+'_sample')
-
-            if batch_count>10000:
-                break
 
 if __name__=="__main__":
     feature_size  = 160
@@ -437,12 +432,12 @@ if __name__=="__main__":
     # discriminator model
     discriminator_rnn_model = set_discriminator_recurrent_model(input_size=feature_size,
                                                                 hidden_size=hidden_size,
-                                                                num_layers=num_layers)
+                                                                num_layers=num_layers+1)
     discriminator_output_model = set_discriminator_output_model(input_size=hidden_size,
                                                                 num_layers=num_layers)
 
     # set optimizer
-    generator_optimizer     = RmsProp(learning_rate=learning_rate*10).update_params
+    generator_optimizer     = RmsProp(learning_rate=learning_rate).update_params
     discriminator_optimizer = RmsProp(learning_rate=learning_rate).update_params
 
 

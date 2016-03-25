@@ -36,7 +36,7 @@ def set_generator_recurrent_model(input_size,
     layers.append(LstmLoopLayer(input_dim=input_size,
                                 hidden_dim=hidden_size,
                                 num_rnn_layers=num_layers,
-                                num_lin_layers=1,
+                                num_lin_layers=num_layers,
                                 name='generator_rnn_model'))
     return layers
 
@@ -439,7 +439,7 @@ if __name__=="__main__":
                                                                 hidden_size=hidden_size,
                                                                 num_layers=num_layers)
     discriminator_output_model = set_discriminator_output_model(input_size=hidden_size,
-                                                                num_layers=1)
+                                                                num_layers=num_layers)
 
     # set optimizer
     generator_optimizer     = RmsProp(learning_rate=learning_rate*10).update_params

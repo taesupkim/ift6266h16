@@ -263,18 +263,21 @@ def set_sample_generation_function(generator_rnn_model):
                                  sampling_length]
 
     # get generator output data
-    output_data = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)[0]
-
+    # output_data = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)[0]
+    output_data_set = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)
+    sample_data = output_data_set[0]
+    update_data = output_data_set[-1]
 
     # input data
     generation_function_inputs  = [init_input_data,
                                    init_hidden_data,
                                    init_cell_data,
                                    sampling_length]
-    generation_function_outputs = [output_data, ]
+    generation_function_outputs = [sample_data, ]
 
     generation_function = theano.function(inputs=generation_function_inputs,
                                           outputs=generation_function_outputs,
+                                          updates=update_data,
                                           on_unused_input='ignore')
     return generation_function
 

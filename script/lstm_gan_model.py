@@ -11,6 +11,7 @@ from optimizer.rmsprop import RmsProp
 from numpy.random import RandomState
 from theano.sandbox.rng_mrg import MRG_RandomStreams
 from utils.display import plot_learning_curve
+from utils.utils import merge_dicts
 theano_rng = MRG_RandomStreams(42)
 np_rng = RandomState(42)
 
@@ -93,10 +94,12 @@ def set_generator_update_function(generator_rnn_model,
                                  sampling_length]
 
     # get generator output data
-    output_data = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)[0]
+    output_data_set = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)
+    sample_data = output_data_set[0]
+    update_data = output_data_set[-1]
 
     # set discriminator input data list
-    discriminator_input_data_list = [output_data,]
+    discriminator_input_data_list = [sample_data,]
 
     # get discriminator hidden data
     discriminator_hidden_data = get_lstm_outputs(input_list=discriminator_input_data_list,
@@ -120,11 +123,11 @@ def set_generator_update_function(generator_rnn_model,
                                                optimizer=generator_optimizer,
                                                use_grad_clip=grad_clipping)
 
-    gradient_dict  = get_model_gradients(generator_rnn_model, generator_updates_cost)
-    gradient_norm  = 0.
-    for grad in gradient_dict:
-        gradient_norm += tensor.sum(grad**2)
-        gradient_norm  = tensor.sqrt(gradient_norm)
+    # gradient_dict  = get_model_gradients(generator_rnn_model, generator_updates_cost)
+    # gradient_norm  = 0.
+    # for grad in gradient_dict:
+    #     gradient_norm += tensor.sum(grad**2)
+    #     gradient_norm  = tensor.sqrt(gradient_norm)
 
     # set generator update inputs
     generator_updates_inputs  = [init_input_data,
@@ -133,12 +136,12 @@ def set_generator_update_function(generator_rnn_model,
                                  sampling_length]
 
     # set generator update outputs
-    generator_updates_outputs = [sample_cost_data, generator_cost, gradient_norm]
+    generator_updates_outputs = [sample_cost_data, generator_cost, ]#gradient_norm]
 
     # set generator update function
     generator_updates_function = theano.function(inputs=generator_updates_inputs,
                                                  outputs=generator_updates_outputs,
-                                                 updates=generator_updates_dict,
+                                                 updates=merge_dicts([generator_updates_dict, update_data]),
                                                  on_unused_input='ignore')
 
     return generator_updates_function
@@ -175,8 +178,9 @@ def set_discriminator_update_function(generator_rnn_model,
                                  sampling_length]
 
     # get generator sampled output data
-    sample_data = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)[0]
-
+    output_data_set = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)
+    sample_data = output_data_set[0]
+    update_data = output_data_set[-1]
 
     # set discriminator real input data list
     discriminator_input_data_list = [input_data,]
@@ -212,11 +216,11 @@ def set_discriminator_update_function(generator_rnn_model,
                                                    optimizer=discriminator_optimizer,
                                                    use_grad_clip=grad_clipping)
 
-    gradient_dict  = get_model_gradients(discriminator_rnn_model+discriminator_output_model, discriminator_updates_cost)
-    gradient_norm  = 0.
-    for grad in gradient_dict:
-        gradient_norm += tensor.sum(grad**2)
-        gradient_norm  = tensor.sqrt(gradient_norm)
+    # gradient_dict  = get_model_gradients(discriminator_rnn_model+discriminator_output_model, discriminator_updates_cost)
+    # gradient_norm  = 0.
+    # for grad in gradient_dict:
+    #     gradient_norm += tensor.sum(grad**2)
+    #     gradient_norm  = tensor.sqrt(gradient_norm)
 
     # set discriminator update inputs
     discriminator_updates_inputs  = [input_data,
@@ -225,12 +229,12 @@ def set_discriminator_update_function(generator_rnn_model,
                                      init_cell_data]
 
     # set discriminator update outputs
-    discriminator_updates_outputs = [input_cost_data, sample_cost_data, discriminator_cost, gradient_norm]
+    discriminator_updates_outputs = [input_cost_data, sample_cost_data, discriminator_cost, ]#gradient_norm]
 
     # set discriminator update function
     discriminator_updates_function = theano.function(inputs=discriminator_updates_inputs,
                                                      outputs=discriminator_updates_outputs,
-                                                     updates=discriminator_updates_dict,
+                                                     updates=merge_dicts([discriminator_updates_dict, update_data]),
                                                      on_unused_input='ignore')
 
     return discriminator_updates_function
@@ -291,7 +295,7 @@ def train_model(feature_size,
                                                       discriminator_rnn_model=discriminator_rnn_model,
                                                       discriminator_output_model=discriminator_output_model,
                                                       generator_optimizer=generator_optimizer,
-                                                      grad_clipping=0.0)
+                                                      grad_clipping=3.6)
 
     # discriminator updater
     print 'DEBUGGING DISCRIMINATOR UPDATE FUNCTION '
@@ -299,7 +303,7 @@ def train_model(feature_size,
                                                               discriminator_rnn_model=discriminator_rnn_model,
                                                               discriminator_output_model=discriminator_output_model,
                                                               discriminator_optimizer=discriminator_optimizer,
-                                                              grad_clipping=0.0)
+                                                              grad_clipping=1.8)
 
     # sample generator
     print 'DEBUGGING SAMPLE GENERATOR FUNCTION '
@@ -365,7 +369,7 @@ def train_model(feature_size,
 
             generator_updater_output = generator_updater(*generator_updater_input)
             generator_cost = generator_updater_output[1].mean()
-            generator_grad_norm = generator_updater_output[-1]
+            # generator_grad_norm = generator_updater_output[-1]
 
             # update discriminator
             init_input_data  = np_rng.normal(size=(source_data.shape[1], feature_size)).astype(floatX)
@@ -385,10 +389,10 @@ def train_model(feature_size,
             input_cost_data    = discriminator_updater_output[0]
             sample_cost_data   = discriminator_updater_output[1]
             discriminator_cost = discriminator_updater_output[2].mean()
-            discriminator_grad_norm = discriminator_updater_output[-1]
+            # discriminator_grad_norm = discriminator_updater_output[-1]
 
-            generator_grad_norm_mean     += generator_grad_norm
-            discriminator_grad_norm_mean += discriminator_grad_norm
+            # generator_grad_norm_mean     += generator_grad_norm
+            # discriminator_grad_norm_mean += discriminator_grad_norm
 
             batch_count += 1
 
@@ -398,8 +402,8 @@ def train_model(feature_size,
                 print 'epoch {}, batch_cnt {} => discriminator cost {}'.format(e, batch_count, discriminator_cost)
                 print 'epoch {}, batch_cnt {} => input data    cost {}'.format(e, batch_count, input_cost_data.mean())
                 print 'epoch {}, batch_cnt {} => sample data   cost {}'.format(e, batch_count, sample_cost_data.mean())
-                print 'epoch {}, batch_cnt {} => generator     grad norm{}'.format(e, batch_count, generator_grad_norm_mean/batch_count)
-                print 'epoch {}, batch_cnt {} => discriminator grad norm{}'.format(e, batch_count, discriminator_grad_norm_mean/batch_count)
+                # print 'epoch {}, batch_cnt {} => generator     grad norm{}'.format(e, batch_count, generator_grad_norm_mean/batch_count)
+                # print 'epoch {}, batch_cnt {} => discriminator grad norm{}'.format(e, batch_count, discriminator_grad_norm_mean/batch_count)
 
                 generator_cost_list.append(generator_cost)
                 discriminator_cost_list.append(discriminator_cost)

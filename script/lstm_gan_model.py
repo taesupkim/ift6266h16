@@ -336,9 +336,11 @@ def train_model(feature_size,
             # set generator initial values
             init_input_data  = np_rng.normal(size=(source_data.shape[1], feature_size)).astype(floatX)
             init_input_data  = numpy.clip(init_input_data, -1., 1.)
-            init_hidden_data = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
-            init_hidden_data = numpy.clip(init_hidden_data, -1., 1.)
-            init_cell_data   = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
+            # init_hidden_data = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
+            # init_hidden_data = numpy.clip(init_hidden_data, -1., 1.)
+            # init_cell_data   = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
+            init_hidden_data = numpy.zeros(shape=(num_layers, source_data.shape[1], hidden_size), dtype=floatX)
+            init_cell_data   = numpy.zeros(shape=(num_layers, source_data.shape[1], hidden_size), dtype=floatX)
 
             # update generator
             generator_updater_input = [init_input_data,
@@ -352,9 +354,11 @@ def train_model(feature_size,
             # update discriminator
             init_input_data  = np_rng.normal(size=(source_data.shape[1], feature_size)).astype(floatX)
             init_input_data  = numpy.clip(init_input_data, -1., 1.)
-            init_hidden_data = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
-            init_hidden_data = numpy.clip(init_hidden_data, -1., 1.)
-            init_cell_data   = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
+            # init_hidden_data = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
+            # init_hidden_data = numpy.clip(init_hidden_data, -1., 1.)
+            # init_cell_data   = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
+            init_hidden_data = numpy.zeros(shape=(num_layers, source_data.shape[1], hidden_size), dtype=floatX)
+            init_cell_data   = numpy.zeros(shape=(num_layers, source_data.shape[1], hidden_size), dtype=floatX)
 
             discriminator_updater_input = [source_data,
                                            init_input_data,
@@ -395,9 +399,11 @@ def train_model(feature_size,
                 # set generator initial values
                 init_input_data  = np_rng.normal(size=(num_samples, feature_size)).astype(floatX)
                 init_input_data  = numpy.clip(init_input_data, -1., 1.)
-                init_hidden_data = np_rng.normal(size=(num_layers, num_samples, hidden_size)).astype(floatX)
-                init_hidden_data = numpy.clip(init_hidden_data, -1., 1.)
-                init_cell_data   = np_rng.normal(size=(num_layers, num_samples, hidden_size)).astype(floatX)
+                # init_hidden_data = np_rng.normal(size=(num_layers, num_samples, hidden_size)).astype(floatX)
+                # init_hidden_data = numpy.clip(init_hidden_data, -1., 1.)
+                # init_cell_data   = np_rng.normal(size=(num_layers, num_samples, hidden_size)).astype(floatX)
+                init_hidden_data = numpy.zeros(shape=(num_layers, num_samples, hidden_size), dtype=floatX)
+                init_cell_data   = numpy.zeros(shape=(num_layers, num_samples, hidden_size), dtype=floatX)
 
                 generator_input = [init_input_data,
                                    init_hidden_data,

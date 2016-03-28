@@ -279,7 +279,7 @@ def train_model(feature_size,
                                                       discriminator_rnn_model=discriminator_rnn_model,
                                                       discriminator_output_model=discriminator_output_model,
                                                       generator_optimizer=generator_optimizer,
-                                                      grad_clipping=10.0)
+                                                      grad_clipping=100.0)
 
     # discriminator updater
     print 'DEBUGGING DISCRIMINATOR UPDATE FUNCTION '
@@ -287,7 +287,7 @@ def train_model(feature_size,
                                                               discriminator_rnn_model=discriminator_rnn_model,
                                                               discriminator_output_model=discriminator_output_model,
                                                               discriminator_optimizer=discriminator_optimizer,
-                                                              grad_clipping=10.0)
+                                                              grad_clipping=100.0)
 
     # sample generator
     print 'DEBUGGING SAMPLE GENERATOR FUNCTION '

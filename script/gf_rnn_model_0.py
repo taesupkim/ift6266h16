@@ -124,7 +124,7 @@ def set_generator_update_function(generator_rnn_model,
 
     generator_cost  = -0.5*tensor.inv(2.0*tensor.sqr(output_std_data))*tensor.sqr(output_mean_data-target_data)
     generator_cost += -0.5*tensor.log(2.0*tensor.sqr(output_std_data)*numpy.pi)
-    generator_cost  = tensor.mean(generator_cost, axis=1)
+    generator_cost  = tensor.sum(generator_cost, axis=1)
 
     # set generator update
     generator_updates_cost = generator_cost.mean()
@@ -370,9 +370,9 @@ def train_model(feature_size,
 
 if __name__=="__main__":
     feature_size  = 160
-    hidden_size   = 240
+    hidden_size   = 160
     learning_rate = 1e-3
-    num_layers    = 3
+    num_layers    = 4
 
     model_name = 'gf_rnn_normal' \
                  + '_FEATURE{}'.format(int(feature_size)) \

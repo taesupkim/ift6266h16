@@ -75,6 +75,8 @@ def set_generator_mean_model(hidden_size,
     layers.append(LinearLayer(input_dim=hidden_size,
                               output_dim=output_size,
                               name='generator_mean_linear_output'))
+
+    layers.append(Tanh(name='generator_mean_tanh_output'))
     return layers
 
 def set_generator_std_model(hidden_size,
@@ -222,6 +224,7 @@ def set_generator_sampling_function(generator_rnn_model,
                                         is_training=True)
 
     output_data = output_mean_data + output_std_data*theano_rng.normal(size=output_std_data.shape, dtype=floatX)
+    output_data = tensor.clip(output_data, -1., 1.)
 
     # input data
     generation_sampling_inputs  = [cur_input_data,

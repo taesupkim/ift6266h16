@@ -325,12 +325,13 @@ def train_model(feature_size,
             generator_cost      = generator_updater_output[0].mean()
             generator_grad_norm = generator_updater_output[1]
 
+            generator_grad_norm_mean += generator_grad_norm
             batch_count += 1
 
             if batch_count%500==0:
                 print '=============sample length {}============================='.format(window_size)
-                print 'epoch {}, batch_cnt {} => generator cost {}'.format(e, batch_count, generator_cost)
-                print 'epoch {}, batch_cnt {} => generator grad norm{}'.format(e, batch_count, generator_grad_norm_mean/batch_count)
+                print 'epoch {}, batch_cnt {} => generator cost      {}'.format(e, batch_count, generator_cost)
+                print 'epoch {}, batch_cnt {} => generator grad norm {}'.format(e, batch_count, generator_grad_norm_mean/batch_count)
 
                 generator_cost_list.append(generator_cost)
                 plot_learning_curve(cost_values=[generator_cost_list,],
@@ -370,7 +371,7 @@ def train_model(feature_size,
 if __name__=="__main__":
     feature_size  = 160
     hidden_size   = 240
-    learning_rate = 1e-3
+    learning_rate = 1e-4
     num_layers    = 3
 
     model_name = 'gf_rnn_normal' \

@@ -13,12 +13,21 @@ from numpy.random import RandomState
 from theano.sandbox.rng_mrg import MRG_RandomStreams
 from utils.display import plot_learning_curve
 from utils.utils import merge_dicts
-from fuel.datasets.youtube_audio import YouTubeAudio
 theano_rng = MRG_RandomStreams(42)
 np_rng = RandomState(42)
 
 floatX = theano.config.floatX
 sampling_rate = 16000
+
+from fuel.datasets.hdf5 import H5PYDataset
+from fuel.utils import find_in_data_path
+
+class YouTubeAudio(H5PYDataset):
+    def __init__(self, youtube_id, **kwargs):
+        super(YouTubeAudio, self).__init__(
+            file_or_path='/data/lisatmp4/taesup/data/YouTubeAudio/'+youtube_id+'.hdf5',
+            which_sets=('train',), **kwargs
+        )
 
 def set_train_datastream(feature_size=16000,
                          window_size=100,

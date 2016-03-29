@@ -23,9 +23,11 @@ train_data = data[:,0:num_trains, :]
 valid_data = data[:,num_trains:, :]
 
 with h5py.File(output_file, 'w') as h5file:
-    data = (('train', 'features', train_data),
-            ('valid', 'features', valid_data))
-    fill_hdf5_file(h5file, data)
+    fill_data = (('train', 'features', train_data),
+                 ('valid', 'features', valid_data))
+    print 'train_data : ', train_data.shape
+    print 'valid_data : ', valid_data.shape
+    fill_hdf5_file(h5file, fill_data)
     h5file['features'].dims[0].label = 'batch'
     h5file['features'].dims[1].label = 'time'
     h5file['features'].dims[2].label = 'feature'

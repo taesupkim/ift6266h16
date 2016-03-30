@@ -332,8 +332,9 @@ def train_model(feature_size,
 
             if train_batch_count%1==0:
                 # set valid data stream with proper length (window size)
+                valid_window_size = 100
                 valid_data_stream = set_valid_datastream(feature_size=feature_size,
-                                                         window_size=window_size)
+                                                         window_size=valid_window_size)
                 # get train data iterator
                 valid_data_iterator = valid_data_stream.get_epoch_iterator()
 
@@ -350,12 +351,12 @@ def train_model(feature_size,
 
                     # source data
                     single_data = batch_data[0]
-                    single_data = single_data.reshape(window_size, feature_size)
+                    single_data = single_data.reshape(single_data.shape[0]/feature_size, feature_size)
                     valid_source_data.append(single_data)
 
                     # target data
                     single_data = batch_data[1]
-                    single_data = single_data.reshape(window_size, feature_size)
+                    single_data = single_data.reshape(single_data.shape[0]/feature_size, feature_size)
                     valid_target_data.append(single_data)
 
                     valid_batch_size += 1

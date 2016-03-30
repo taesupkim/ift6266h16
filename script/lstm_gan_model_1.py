@@ -12,6 +12,9 @@ from numpy.random import RandomState
 from theano.sandbox.rng_mrg import MRG_RandomStreams
 from utils.display import plot_learning_curve
 from utils.utils import merge_dicts
+from fuel.datasets.youtube_audio import YouTubeAudio
+import time
+
 theano_rng = MRG_RandomStreams(42)
 np_rng = RandomState(42)
 
@@ -21,7 +24,6 @@ sampling_rate = 16000
 def set_datastream(feature_size=16000,
                    window_size=100,
                    youtube_id='XqaJ2Ol5cC4'):
-    from fuel.datasets.youtube_audio import YouTubeAudio
     data_stream = YouTubeAudio(youtube_id).get_example_stream()
     data_stream = Window(offset=feature_size,
                          source_window=window_size*feature_size,
@@ -37,7 +39,7 @@ def set_generator_recurrent_model(input_size,
     layers.append(LstmAllLoopGaussianLayer(input_dim=input_size,
                                            hidden_dim=hidden_size,
                                            num_rnn_layers=num_layers,
-                                           num_lin_layers=num_layers,
+                                           num_lin_layers=num_layers-1,
                                            name='generator_rnn_model'))
     return layers
 
@@ -60,13 +62,8 @@ def set_discriminator_output_model(input_size):
     layers.append(Relu(name='discriminator_output_model_relu0'))
 
     layers.append(LinearLayer(input_dim=input_size/2,
-                              output_dim=input_size/2,
-                              name='discriminator_output_model_linear1'))
-    layers.append(Relu(name='discriminator_output_model_relu1'))
-
-    layers.append(LinearLayer(input_dim=input_size/2,
                               output_dim=1,
-                              name='discriminator_output_model_linear2'))
+                              name='discriminator_output_model_linear1'))
     layers.append(Logistic(name='discriminator_output_model_logistic2'))
     return layers
 
@@ -75,6 +72,7 @@ def set_generator_update_function(generator_rnn_model,
                                   discriminator_output_model,
                                   generator_optimizer,
                                   grad_clipping):
+
     # init input data (num_samples *input_dims)
     init_input_data = tensor.matrix(name='init_input_data',
                                     dtype=floatX)
@@ -100,6 +98,8 @@ def set_generator_update_function(generator_rnn_model,
     # get generator output data
     output_data_set = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)
     sample_data = output_data_set[0]
+    hidden_data = output_data_set[1]
+    cell_data   = output_data_set[2]
     update_data = output_data_set[-1]
 
     # set discriminator input data list
@@ -112,8 +112,8 @@ def set_generator_update_function(generator_rnn_model,
 
     # get discriminator output data
     discriminator_sample_score_data = get_tensor_output(input=discriminator_sample_hidden_data,
-                                         layers=discriminator_output_model,
-                                         is_training=True)
+                                                        layers=discriminator_output_model,
+                                                        is_training=True)
 
     # get cost based on discriminator (binary cross-entropy over all data)
     # sum over generator cost over time_length and output_dims, then mean over samples
@@ -140,7 +140,12 @@ def set_generator_update_function(generator_rnn_model,
                                  sampling_length]
 
     # set generator update outputs
-    generator_updates_outputs = [discriminator_sample_score_data, generator_cost, gradient_norm]
+    generator_updates_outputs = [discriminator_sample_score_data,
+                                 generator_cost,
+                                 sample_data,
+                                 hidden_data,
+                                 cell_data,
+                                 gradient_norm]
 
     # set generator update function
     generator_updates_function = theano.function(inputs=generator_updates_inputs,
@@ -184,6 +189,8 @@ def set_discriminator_update_function(generator_rnn_model,
     # get generator sampled output data
     output_data_set = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)
     sample_data = output_data_set[0]
+    hidden_data = output_data_set[1]
+    cell_data   = output_data_set[2]
     update_data = output_data_set[-1]
 
     # set discriminator real input data list
@@ -239,6 +246,9 @@ def set_discriminator_update_function(generator_rnn_model,
     discriminator_updates_outputs = [discriminator_input_score_data,
                                      discriminator_sample_score_data,
                                      discriminator_cost,
+                                     sample_data,
+                                     hidden_data,
+                                     cell_data,
                                      gradient_norm]
 
     # set discriminator update function
@@ -331,7 +341,7 @@ def train_model(feature_size,
     generator_grad_norm_mean     = 0.0
     discriminator_grad_norm_mean = 0.0
 
-    init_window_size = 20
+    init_window_size = 50
     for e in xrange(num_epochs):
         window_size = init_window_size + 5*e
 
@@ -401,14 +411,27 @@ def train_model(feature_size,
             input_cost_data    = discriminator_updater_output[0]
             sample_cost_data   = discriminator_updater_output[1]
             discriminator_cost = discriminator_updater_output[2].mean()
+
+            sample_data = discriminator_updater_output[3]
+            hidden_data = discriminator_updater_output[4]
+            cell_data   = discriminator_updater_output[5]
+
             discriminator_grad_norm = discriminator_updater_output[-1]
+
+            for t in xrange(3):
+                print 'sample_data[{}] : '.format(t), sample_data[t][0][:5]
+            for t in xrange(3):
+                print 'hidden_data[{}] : '.format(t), hidden_data[t][0][:5]
+            for t in xrange(3):
+                print 'cell_data[{}] : '.format(t), cell_data[t][0][:5]
+                time.sleep(2)
 
             generator_grad_norm_mean     += generator_grad_norm
             discriminator_grad_norm_mean += discriminator_grad_norm
 
             batch_count += 1
 
-            if batch_count%500==0:
+            if batch_count%10==0:
                 print '=============sample length {}============================='.format(window_size)
                 print 'epoch {}, batch_cnt {} => generator     cost {}'.format(e, batch_count, generator_cost)
                 print 'epoch {}, batch_cnt {} => discriminator cost {}'.format(e, batch_count, discriminator_cost)
@@ -430,7 +453,7 @@ def train_model(feature_size,
                                     legend_pos='upper left')
 
 
-            if batch_count%5000==0:
+            if batch_count%100==0:
                 num_samples = 10
                 num_sec     = 10
                 sampling_length = num_sec*sampling_rate/feature_size
@@ -459,10 +482,10 @@ def train_model(feature_size,
 if __name__=="__main__":
     feature_size  =  80
     hidden_size   = 160
-    learning_rate = 1e-3
+    learning_rate = 1e-4
     num_layers    = 3
 
-    model_name = 'lstm_gan_all_hidden' \
+    model_name = 'lstm_gan' \
                  + '_FEATURE{}'.format(int(feature_size)) \
                  + '_HIDDEN{}'.format(int(hidden_size)) \
                  + '_LAYERS{}'.format(int(num_layers)) \
@@ -480,7 +503,7 @@ if __name__=="__main__":
     discriminator_output_model = set_discriminator_output_model(input_size=hidden_size*num_layers)
 
     # set optimizer
-    generator_optimizer     = RmsProp(learning_rate=learning_rate).update_params
+    generator_optimizer     = RmsProp(learning_rate=learning_rate*10.).update_params
     discriminator_optimizer = RmsProp(learning_rate=learning_rate).update_params
 
 

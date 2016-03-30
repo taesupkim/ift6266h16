@@ -477,7 +477,7 @@ if __name__=="__main__":
     discriminator_rnn_model = set_discriminator_recurrent_model(input_size=feature_size,
                                                                 hidden_size=hidden_size,
                                                                 num_layers=num_layers)
-    discriminator_output_model = set_discriminator_output_model(input_size=hidden_size)
+    discriminator_output_model = set_discriminator_output_model(input_size=hidden_size*num_layers)
 
     # set optimizer
     generator_optimizer     = RmsProp(learning_rate=learning_rate).update_params

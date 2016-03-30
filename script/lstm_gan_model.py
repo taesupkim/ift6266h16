@@ -5,7 +5,7 @@ from theano import tensor
 from data.window import Window
 from util.utils import save_wavfile
 from layer.activations import Tanh, Logistic, Relu
-from layer.layers import LinearLayer, LstmLoopGaussianLayer, LstmStackLayer
+from layer.layers import LinearLayer, LstmAllLoopGaussianLayer, LstmStackLayer
 from layer.layer_utils import get_tensor_output, get_model_updates, get_lstm_outputs, get_model_gradients
 from optimizer.rmsprop import RmsProp
 from numpy.random import RandomState
@@ -34,11 +34,11 @@ def set_generator_recurrent_model(input_size,
                                   hidden_size,
                                   num_layers):
     layers = []
-    layers.append(LstmLoopGaussianLayer(input_dim=input_size,
-                                        hidden_dim=hidden_size,
-                                        num_rnn_layers=num_layers,
-                                        num_lin_layers=num_layers,
-                                        name='generator_rnn_model'))
+    layers.append(LstmAllLoopGaussianLayer(input_dim=input_size,
+                                           hidden_dim=hidden_size,
+                                           num_rnn_layers=num_layers,
+                                           num_lin_layers=num_layers,
+                                           name='generator_rnn_model'))
     return layers
 
 def set_discriminator_recurrent_model(input_size,
@@ -60,13 +60,8 @@ def set_discriminator_output_model(input_size):
     layers.append(Relu(name='discriminator_output_model_relu0'))
 
     layers.append(LinearLayer(input_dim=input_size/2,
-                              output_dim=input_size/2,
-                              name='discriminator_output_model_linear1'))
-    layers.append(Relu(name='discriminator_output_model_relu1'))
-
-    layers.append(LinearLayer(input_dim=input_size/2,
                               output_dim=1,
-                              name='discriminator_output_model_linear2'))
+                              name='discriminator_output_model_linear1'))
     layers.append(Logistic(name='discriminator_output_model_logistic2'))
     return layers
 
@@ -331,7 +326,7 @@ def train_model(feature_size,
     generator_grad_norm_mean     = 0.0
     discriminator_grad_norm_mean = 0.0
 
-    init_window_size = 20
+    init_window_size = 50
     for e in xrange(num_epochs):
         window_size = init_window_size + 5*e
 
@@ -408,7 +403,7 @@ def train_model(feature_size,
 
             batch_count += 1
 
-            if batch_count%500==0:
+            if batch_count%10==0:
                 print '=============sample length {}============================='.format(window_size)
                 print 'epoch {}, batch_cnt {} => generator     cost {}'.format(e, batch_count, generator_cost)
                 print 'epoch {}, batch_cnt {} => discriminator cost {}'.format(e, batch_count, discriminator_cost)
@@ -430,7 +425,7 @@ def train_model(feature_size,
                                     legend_pos='upper left')
 
 
-            if batch_count%5000==0:
+            if batch_count%100==0:
                 num_samples = 10
                 num_sec     = 10
                 sampling_length = num_sec*sampling_rate/feature_size
@@ -480,7 +475,7 @@ if __name__=="__main__":
     discriminator_output_model = set_discriminator_output_model(input_size=hidden_size*num_layers)
 
     # set optimizer
-    generator_optimizer     = RmsProp(learning_rate=learning_rate).update_params
+    generator_optimizer     = RmsProp(learning_rate=learning_rate*10.).update_params
     discriminator_optimizer = RmsProp(learning_rate=learning_rate).update_params
 
 

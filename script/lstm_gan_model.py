@@ -5,7 +5,7 @@ from theano import tensor
 from data.window import Window
 from util.utils import save_wavfile
 from layer.activations import Tanh, Logistic, Relu
-from layer.layers import LinearLayer, LstmLayer, LstmLoopLayer
+from layer.layers import LinearLayer, LstmLoopGaussianLayer, LstmStackLayer
 from layer.layer_utils import get_tensor_output, get_model_updates, get_lstm_outputs, get_model_gradients
 from optimizer.rmsprop import RmsProp
 from numpy.random import RandomState
@@ -45,26 +45,29 @@ def set_discriminator_recurrent_model(input_size,
                                       hidden_size,
                                       num_layers):
     layers = []
-    for l in xrange(num_layers):
-        layers.append(LstmLayer(input_dim=input_size if l is 0 else hidden_size,
-                                hidden_dim=hidden_size,
-                                name='discriminator_rnn_layer{}'.format(l)))
+    layers.append(LstmStackLayer(input_dim=input_size,
+                                 hidden_dim=hidden_size,
+                                 num_layers=num_layers,
+                                 name='discriminator_rnn_model'))
     return layers
 
-def set_discriminator_output_model(input_size,
-                                   num_layers):
+def set_discriminator_output_model(input_size):
     layers = []
 
-    for l in xrange(num_layers-1):
-        layers.append(LinearLayer(input_dim=input_size,
-                                  output_dim=input_size,
-                                  name='discriminator_output_linear_layer{}'.format(l)))
-        layers.append(Relu(name='discriminator_output_relu_layer{}'.format(l)))
-
     layers.append(LinearLayer(input_dim=input_size,
+                              output_dim=input_size/2,
+                              name='discriminator_output_model_linear0'))
+    layers.append(Relu(name='discriminator_output_model_relu0'))
+
+    layers.append(LinearLayer(input_dim=input_size/2,
+                              output_dim=input_size/2,
+                              name='discriminator_output_model_linear1'))
+    layers.append(Relu(name='discriminator_output_model_relu1'))
+
+    layers.append(LinearLayer(input_dim=input_size/2,
                               output_dim=1,
-                              name='discriminator_output_linear_output'))
-    layers.append(Logistic(name='discriminator_output_logistic_output'))
+                              name='discriminator_output_model_linear2'))
+    layers.append(Logistic(name='discriminator_output_model_logistic2'))
     return layers
 
 def set_generator_update_function(generator_rnn_model,
@@ -87,6 +90,7 @@ def set_generator_update_function(generator_rnn_model,
     # sampling length
     sampling_length = tensor.scalar(name='sampling_length',
                                     dtype='int32')
+
     # set generator input data list
     generator_input_data_list = [init_input_data,
                                  init_hidden_data,
@@ -99,22 +103,22 @@ def set_generator_update_function(generator_rnn_model,
     update_data = output_data_set[-1]
 
     # set discriminator input data list
-    discriminator_input_data_list = [sample_data,]
+    discriminator_sample_data_list = [sample_data,]
 
     # get discriminator hidden data
-    discriminator_hidden_data = get_lstm_outputs(input_list=discriminator_input_data_list,
-                                                 layers=discriminator_rnn_model,
-                                                 is_training=True)[-1]
+    discriminator_sample_hidden_data = discriminator_rnn_model[0].forward(discriminator_sample_data_list, is_training=True)[0]
+    discriminator_sample_hidden_data = discriminator_sample_hidden_data.dimshuffle(0, 2, 1, 3)
+    discriminator_sample_hidden_data = discriminator_sample_hidden_data.flatten(ndim=3)
 
     # get discriminator output data
-    sample_cost_data = get_tensor_output(input=discriminator_hidden_data,
+    discriminator_sample_score_data = get_tensor_output(input=discriminator_sample_hidden_data,
                                          layers=discriminator_output_model,
                                          is_training=True)
 
     # get cost based on discriminator (binary cross-entropy over all data)
     # sum over generator cost over time_length and output_dims, then mean over samples
-    generator_cost = tensor.nnet.binary_crossentropy(output=sample_cost_data,
-                                                     target=tensor.ones_like(sample_cost_data)).sum(axis=2)
+    generator_cost = tensor.nnet.binary_crossentropy(output=discriminator_sample_score_data,
+                                                     target=tensor.ones_like(discriminator_sample_score_data))
 
     # set generator update
     generator_updates_cost = generator_cost.mean()
@@ -123,11 +127,11 @@ def set_generator_update_function(generator_rnn_model,
                                                optimizer=generator_optimizer,
                                                use_grad_clip=grad_clipping)
 
-    # gradient_dict  = get_model_gradients(generator_rnn_model, generator_updates_cost)
-    # gradient_norm  = 0.
-    # for grad in gradient_dict:
-    #     gradient_norm += tensor.sum(grad**2)
-    #     gradient_norm  = tensor.sqrt(gradient_norm)
+    gradient_dict  = get_model_gradients(generator_rnn_model, generator_updates_cost)
+    gradient_norm  = 0.
+    for grad in gradient_dict:
+        gradient_norm += tensor.sum(grad**2)
+        gradient_norm  = tensor.sqrt(gradient_norm)
 
     # set generator update inputs
     generator_updates_inputs  = [init_input_data,
@@ -136,7 +140,7 @@ def set_generator_update_function(generator_rnn_model,
                                  sampling_length]
 
     # set generator update outputs
-    generator_updates_outputs = [sample_cost_data, generator_cost, ]#gradient_norm]
+    generator_updates_outputs = [sample_cost_data, generator_cost, gradient_norm]
 
     # set generator update function
     generator_updates_function = theano.function(inputs=generator_updates_inputs,
@@ -189,25 +193,28 @@ def set_discriminator_update_function(generator_rnn_model,
     discriminator_sample_data_list = [sample_data,]
 
     # get discriminator input cost data
-    input_cost_data = get_tensor_output(input=get_lstm_outputs(input_list=discriminator_input_data_list,
-                                                               layers=discriminator_rnn_model,
-                                                               is_training=True)[-1],
-                                        layers=discriminator_output_model,
-                                        is_training=True)
+    discriminator_input_hidden_data = discriminator_rnn_model[0].forward(discriminator_input_data_list, is_training=True)[0]
+    discriminator_input_hidden_data = discriminator_input_hidden_data.dimshuffle(0, 2, 1, 3)
+    discriminator_input_hidden_data = discriminator_input_hidden_data.flatten(ndim=3)
+    discriminator_input_score_data  = get_tensor_output(input=discriminator_input_hidden_data,
+                                                        layers=discriminator_output_model,
+                                                        is_training=True)
 
     # get discriminator sample cost data
-    sample_cost_data = get_tensor_output(input=get_lstm_outputs(input_list=discriminator_sample_data_list,
-                                                                layers=discriminator_rnn_model,
-                                                                is_training=True)[-1],
-                                        layers=discriminator_output_model,
-                                        is_training=True)
+    discriminator_sample_hidden_data = discriminator_rnn_model[0].forward(discriminator_sample_data_list, is_training=True)[0]
+    discriminator_sample_hidden_data = discriminator_sample_hidden_data.dimshuffle(0, 2, 1, 3)
+    discriminator_sample_hidden_data = discriminator_sample_hidden_data.flatten(ndim=3)
+    discriminator_sample_score_data  = get_tensor_output(input=discriminator_sample_hidden_data,
+                                                         layers=discriminator_output_model,
+                                                         is_training=True)
+
 
     # get cost based on discriminator (binary cross-entropy over all data)
     # sum over discriminator cost over time_length and output_dims, then mean over samples
-    discriminator_cost = (tensor.nnet.binary_crossentropy(output=input_cost_data,
-                                                          target=tensor.ones_like(input_cost_data)).sum(axis=2) +
-                          tensor.nnet.binary_crossentropy(output=sample_cost_data,
-                                                          target=tensor.zeros_like(sample_cost_data)).sum(axis=2))
+    discriminator_cost = (tensor.nnet.binary_crossentropy(output=discriminator_input_score_data,
+                                                          target=tensor.ones_like(discriminator_input_score_data)) +
+                          tensor.nnet.binary_crossentropy(output=discriminator_sample_score_data,
+                                                          target=tensor.zeros_like(discriminator_sample_score_data)))
 
     # set discriminator update
     discriminator_updates_cost = discriminator_cost.mean()
@@ -216,11 +223,11 @@ def set_discriminator_update_function(generator_rnn_model,
                                                    optimizer=discriminator_optimizer,
                                                    use_grad_clip=grad_clipping)
 
-    # gradient_dict  = get_model_gradients(discriminator_rnn_model+discriminator_output_model, discriminator_updates_cost)
-    # gradient_norm  = 0.
-    # for grad in gradient_dict:
-    #     gradient_norm += tensor.sum(grad**2)
-    #     gradient_norm  = tensor.sqrt(gradient_norm)
+    gradient_dict  = get_model_gradients(discriminator_rnn_model+discriminator_output_model, discriminator_updates_cost)
+    gradient_norm  = 0.
+    for grad in gradient_dict:
+        gradient_norm += tensor.sum(grad**2)
+        gradient_norm  = tensor.sqrt(gradient_norm)
 
     # set discriminator update inputs
     discriminator_updates_inputs  = [input_data,
@@ -229,7 +236,10 @@ def set_discriminator_update_function(generator_rnn_model,
                                      init_cell_data]
 
     # set discriminator update outputs
-    discriminator_updates_outputs = [input_cost_data, sample_cost_data, discriminator_cost, ]#gradient_norm]
+    discriminator_updates_outputs = [discriminator_input_score_data,
+                                     discriminator_sample_score_data,
+                                     discriminator_cost,
+                                     gradient_norm]
 
     # set discriminator update function
     discriminator_updates_function = theano.function(inputs=discriminator_updates_inputs,
@@ -263,7 +273,6 @@ def set_sample_generation_function(generator_rnn_model):
                                  sampling_length]
 
     # get generator output data
-    # output_data = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)[0]
     output_data_set = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)
     sample_data = output_data_set[0]
     update_data = output_data_set[-1]
@@ -298,7 +307,7 @@ def train_model(feature_size,
                                                       discriminator_rnn_model=discriminator_rnn_model,
                                                       discriminator_output_model=discriminator_output_model,
                                                       generator_optimizer=generator_optimizer,
-                                                      grad_clipping=3.6)
+                                                      grad_clipping=0.0)
 
     # discriminator updater
     print 'DEBUGGING DISCRIMINATOR UPDATE FUNCTION '
@@ -306,7 +315,7 @@ def train_model(feature_size,
                                                               discriminator_rnn_model=discriminator_rnn_model,
                                                               discriminator_output_model=discriminator_output_model,
                                                               discriminator_optimizer=discriminator_optimizer,
-                                                              grad_clipping=1.8)
+                                                              grad_clipping=0.0)
 
     # sample generator
     print 'DEBUGGING SAMPLE GENERATOR FUNCTION '
@@ -358,11 +367,11 @@ def train_model(feature_size,
             # set generator initial values
             init_input_data  = np_rng.normal(size=(source_data.shape[1], feature_size)).astype(floatX)
             init_input_data  = numpy.clip(init_input_data, -1., 1.)
-            # init_hidden_data = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
-            # init_hidden_data = numpy.clip(init_hidden_data, -1., 1.)
-            # init_cell_data   = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
-            init_hidden_data = numpy.zeros(shape=(num_layers, source_data.shape[1], hidden_size), dtype=floatX)
-            init_cell_data   = numpy.zeros(shape=(num_layers, source_data.shape[1], hidden_size), dtype=floatX)
+            init_hidden_data = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
+            init_hidden_data = numpy.clip(init_hidden_data, -1., 1.)
+            init_cell_data   = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
+            # init_hidden_data = numpy.zeros(shape=(num_layers, source_data.shape[1], hidden_size), dtype=floatX)
+            # init_cell_data   = numpy.zeros(shape=(num_layers, source_data.shape[1], hidden_size), dtype=floatX)
 
             # update generator
             generator_updater_input = [init_input_data,
@@ -372,16 +381,16 @@ def train_model(feature_size,
 
             generator_updater_output = generator_updater(*generator_updater_input)
             generator_cost = generator_updater_output[1].mean()
-            # generator_grad_norm = generator_updater_output[-1]
+            generator_grad_norm = generator_updater_output[-1]
 
             # update discriminator
             init_input_data  = np_rng.normal(size=(source_data.shape[1], feature_size)).astype(floatX)
             init_input_data  = numpy.clip(init_input_data, -1., 1.)
-            # init_hidden_data = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
-            # init_hidden_data = numpy.clip(init_hidden_data, -1., 1.)
-            # init_cell_data   = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
-            init_hidden_data = numpy.zeros(shape=(num_layers, source_data.shape[1], hidden_size), dtype=floatX)
-            init_cell_data   = numpy.zeros(shape=(num_layers, source_data.shape[1], hidden_size), dtype=floatX)
+            init_hidden_data = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
+            init_hidden_data = numpy.clip(init_hidden_data, -1., 1.)
+            init_cell_data   = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
+            # init_hidden_data = numpy.zeros(shape=(num_layers, source_data.shape[1], hidden_size), dtype=floatX)
+            # init_cell_data   = numpy.zeros(shape=(num_layers, source_data.shape[1], hidden_size), dtype=floatX)
 
             discriminator_updater_input = [source_data,
                                            init_input_data,
@@ -392,10 +401,10 @@ def train_model(feature_size,
             input_cost_data    = discriminator_updater_output[0]
             sample_cost_data   = discriminator_updater_output[1]
             discriminator_cost = discriminator_updater_output[2].mean()
-            # discriminator_grad_norm = discriminator_updater_output[-1]
+            discriminator_grad_norm = discriminator_updater_output[-1]
 
-            # generator_grad_norm_mean     += generator_grad_norm
-            # discriminator_grad_norm_mean += discriminator_grad_norm
+            generator_grad_norm_mean     += generator_grad_norm
+            discriminator_grad_norm_mean += discriminator_grad_norm
 
             batch_count += 1
 
@@ -405,8 +414,8 @@ def train_model(feature_size,
                 print 'epoch {}, batch_cnt {} => discriminator cost {}'.format(e, batch_count, discriminator_cost)
                 print 'epoch {}, batch_cnt {} => input data    cost {}'.format(e, batch_count, input_cost_data.mean())
                 print 'epoch {}, batch_cnt {} => sample data   cost {}'.format(e, batch_count, sample_cost_data.mean())
-                # print 'epoch {}, batch_cnt {} => generator     grad norm{}'.format(e, batch_count, generator_grad_norm_mean/batch_count)
-                # print 'epoch {}, batch_cnt {} => discriminator grad norm{}'.format(e, batch_count, discriminator_grad_norm_mean/batch_count)
+                print 'epoch {}, batch_cnt {} => generator     grad norm{}'.format(e, batch_count, generator_grad_norm_mean/batch_count)
+                print 'epoch {}, batch_cnt {} => discriminator grad norm{}'.format(e, batch_count, discriminator_grad_norm_mean/batch_count)
 
                 generator_cost_list.append(generator_cost)
                 discriminator_cost_list.append(discriminator_cost)
@@ -428,11 +437,11 @@ def train_model(feature_size,
                 # set generator initial values
                 init_input_data  = np_rng.normal(size=(num_samples, feature_size)).astype(floatX)
                 init_input_data  = numpy.clip(init_input_data, -1., 1.)
-                # init_hidden_data = np_rng.normal(size=(num_layers, num_samples, hidden_size)).astype(floatX)
-                # init_hidden_data = numpy.clip(init_hidden_data, -1., 1.)
-                # init_cell_data   = np_rng.normal(size=(num_layers, num_samples, hidden_size)).astype(floatX)
-                init_hidden_data = numpy.zeros(shape=(num_layers, num_samples, hidden_size), dtype=floatX)
-                init_cell_data   = numpy.zeros(shape=(num_layers, num_samples, hidden_size), dtype=floatX)
+                init_hidden_data = np_rng.normal(size=(num_layers, num_samples, hidden_size)).astype(floatX)
+                init_hidden_data = numpy.clip(init_hidden_data, -1., 1.)
+                init_cell_data   = np_rng.normal(size=(num_layers, num_samples, hidden_size)).astype(floatX)
+                # init_hidden_data = numpy.zeros(shape=(num_layers, num_samples, hidden_size), dtype=floatX)
+                # init_cell_data   = numpy.zeros(shape=(num_layers, num_samples, hidden_size), dtype=floatX)
 
                 generator_input = [init_input_data,
                                    init_hidden_data,
@@ -448,10 +457,10 @@ def train_model(feature_size,
                 save_wavfile(sample_data, model_name+'_sample')
 
 if __name__=="__main__":
-    feature_size  = 160
-    hidden_size   = 240
+    feature_size  =  80
+    hidden_size   = 160
     learning_rate = 1e-3
-    num_layers    = 2
+    num_layers    = 3
 
     model_name = 'lstm_gan' \
                  + '_FEATURE{}'.format(int(feature_size)) \
@@ -467,9 +476,8 @@ if __name__=="__main__":
     # discriminator model
     discriminator_rnn_model = set_discriminator_recurrent_model(input_size=feature_size,
                                                                 hidden_size=hidden_size,
-                                                                num_layers=num_layers+1)
-    discriminator_output_model = set_discriminator_output_model(input_size=hidden_size,
                                                                 num_layers=num_layers)
+    discriminator_output_model = set_discriminator_output_model(input_size=hidden_size)
 
     # set optimizer
     generator_optimizer     = RmsProp(learning_rate=learning_rate).update_params

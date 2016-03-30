@@ -140,7 +140,7 @@ def set_generator_update_function(generator_rnn_model,
                                  sampling_length]
 
     # set generator update outputs
-    generator_updates_outputs = [sample_cost_data, generator_cost, gradient_norm]
+    generator_updates_outputs = [discriminator_sample_score_data, generator_cost, gradient_norm]
 
     # set generator update function
     generator_updates_function = theano.function(inputs=generator_updates_inputs,

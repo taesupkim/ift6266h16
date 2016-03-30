@@ -385,6 +385,9 @@ def train_model(feature_size,
                     valid_cost_mean += generator_valid_cost
                     valid_batch_count += 1
 
+                    if valid_batch_count>100:
+                        break
+
                 valid_cost_mean = valid_cost_mean/valid_batch_count
 
                 print '=============sample length {}============================='.format(window_size)

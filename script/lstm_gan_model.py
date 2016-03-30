@@ -454,7 +454,7 @@ def train_model(feature_size,
 if __name__=="__main__":
     feature_size  =  80
     hidden_size   = 160
-    learning_rate = 1e-3
+    learning_rate = 1e-4
     num_layers    = 3
 
     model_name = 'lstm_gan' \

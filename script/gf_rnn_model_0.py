@@ -205,8 +205,8 @@ def set_generator_sampling_function(generator_rnn_model,
     cur_input_data = tensor.matrix(name='cur_input_data',
                                    dtype=floatX)
 
-    # prev hidden data (num_samples * (num_layers * input_dims))
-    prev_hidden_data = tensor.matrix(name='prev_hidden_data',
+    # prev hidden data (num_layers * num_samples * input_dims))
+    prev_hidden_data = tensor.tensor3(name='prev_hidden_data',
                                       dtype=floatX)
 
     generator_input_data_list = [cur_input_data, prev_hidden_data]

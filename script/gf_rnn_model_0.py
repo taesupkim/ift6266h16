@@ -126,7 +126,6 @@ def set_generator_update_function(generator_rnn_model,
 
     generator_cost  = -0.5*tensor.inv(2.0*tensor.sqr(output_std_data))*tensor.sqr(output_mean_data-target_data)
     generator_cost += -0.5*tensor.log(2.0*tensor.sqr(output_std_data)*numpy.pi)
-    generator_cost  = tensor.sum(generator_cost, axis=1)
 
     # set generator update
     generator_updates_cost = generator_cost.mean()
@@ -183,7 +182,6 @@ def set_generator_evaluation_function(generator_rnn_model,
 
     generator_cost  = -0.5*tensor.inv(2.0*tensor.sqr(output_std_data))*tensor.sqr(output_mean_data-target_data)
     generator_cost += -0.5*tensor.log(2.0*tensor.sqr(output_std_data)*numpy.pi)
-    generator_cost  = tensor.sum(generator_cost, axis=1)
 
     # set generator evaluate inputs
     generator_evaluate_inputs  = [source_data,
@@ -218,10 +216,10 @@ def set_generator_sampling_function(generator_rnn_model,
     # get generator output data
     output_mean_data = get_tensor_output(input=cur_hidden_data,
                                          layers=generator_mean_model,
-                                         is_training=True)
+                                         is_training=False)
     output_std_data = get_tensor_output(input=cur_hidden_data,
                                         layers=generator_std_model,
-                                        is_training=True)
+                                        is_training=False)
 
     output_data = output_mean_data + output_std_data*theano_rng.normal(size=output_std_data.shape, dtype=floatX)
     output_data = tensor.clip(output_data, -1., 1.)
@@ -269,7 +267,8 @@ def train_model(feature_size,
 
     print 'START TRAINING'
     # for each epoch
-    generator_cost_list = []
+    generator_train_cost_list = []
+    generator_valid_cost_list = []
 
     generator_grad_norm_mean = 0.0
 
@@ -284,92 +283,146 @@ def train_model(feature_size,
         train_data_iterator = train_data_stream.get_epoch_iterator()
 
         # for each batch
-        batch_count = 0
-        batch_size = 0
-        source_data = []
-        target_data = []
+        train_batch_count = 0
+        train_batch_size = 0
+        train_source_data = []
+        train_target_data = []
         for batch_idx, batch_data in enumerate(train_data_iterator):
-            if batch_size==0:
-                source_data = []
-                target_data = []
+            if train_batch_size==0:
+                train_source_data = []
+                train_target_data = []
 
             # source data
             single_data = batch_data[0]
             single_data = single_data.reshape(window_size, feature_size)
-            source_data.append(single_data)
+            train_source_data.append(single_data)
 
             # target data
             single_data = batch_data[1]
             single_data = single_data.reshape(window_size, feature_size)
-            target_data.append(single_data)
+            train_target_data.append(single_data)
 
-            batch_size += 1
+            train_batch_size += 1
 
-            if batch_size<128:
+            if train_batch_size<128:
                 continue
             else:
                 # source data
-                source_data = numpy.asarray(source_data, dtype=floatX)
-                source_data = numpy.swapaxes(source_data, axis1=0, axis2=1)
+                train_source_data = numpy.asarray(train_source_data, dtype=floatX)
+                train_source_data = numpy.swapaxes(train_source_data, axis1=0, axis2=1)
                 # target data
-                target_data = numpy.asarray(target_data, dtype=floatX)
-                target_data = numpy.swapaxes(target_data, axis1=0, axis2=1)
-                batch_size = 0
+                train_target_data = numpy.asarray(train_target_data, dtype=floatX)
+                train_target_data = numpy.swapaxes(train_target_data, axis1=0, axis2=1)
+                train_batch_size = 0
 
             # normalize
-            source_data = (source_data/(2.**15)).astype(floatX)
-            target_data = (target_data/(2.**15)).astype(floatX)
+            train_source_data = (train_source_data/(2.**15)).astype(floatX)
+            train_target_data = (train_target_data/(2.**15)).astype(floatX)
 
             # update generator
-            generator_updater_input = [source_data,
-                                       target_data]
+            generator_updater_input = [train_source_data,
+                                       train_target_data]
 
             generator_updater_output = generator_updater(*generator_updater_input)
-            generator_cost      = generator_updater_output[0].mean()
-            generator_grad_norm = generator_updater_output[1]
+            generator_train_cost = generator_updater_output[0].mean()
+            generator_grad_norm  = generator_updater_output[1]
 
             generator_grad_norm_mean += generator_grad_norm
-            batch_count += 1
+            train_batch_count += 1
 
-            if batch_count%500==0:
+            if train_batch_count%1==0:
+                # set valid data stream with proper length (window size)
+                valid_data_stream = set_valid_datastream(feature_size=feature_size,
+                                                         window_size=window_size)
+                # get train data iterator
+                valid_data_iterator = valid_data_stream.get_epoch_iterator()
+
+                # for each batch
+                valid_batch_count = 0
+                valid_batch_size = 0
+                valid_source_data = []
+                valid_target_data = []
+                valid_cost_mean = 0.0
+                for batch_idx, batch_data in enumerate(valid_data_iterator):
+                    if valid_batch_size==0:
+                        valid_source_data = []
+                        valid_target_data = []
+
+                    # source data
+                    single_data = batch_data[0]
+                    single_data = single_data.reshape(window_size, feature_size)
+                    valid_source_data.append(single_data)
+
+                    # target data
+                    single_data = batch_data[1]
+                    single_data = single_data.reshape(window_size, feature_size)
+                    valid_target_data.append(single_data)
+
+                    valid_batch_size += 1
+
+                    if valid_batch_size<128:
+                        continue
+                    else:
+                        # source data
+                        valid_source_data = numpy.asarray(valid_source_data, dtype=floatX)
+                        valid_source_data = numpy.swapaxes(valid_source_data, axis1=0, axis2=1)
+                        # target data
+                        valid_target_data = numpy.asarray(valid_target_data, dtype=floatX)
+                        valid_target_data = numpy.swapaxes(valid_target_data, axis1=0, axis2=1)
+                        valid_batch_size = 0
+
+                    # normalize
+                    valid_source_data = (valid_source_data/(2.**15)).astype(floatX)
+                    valid_target_data = (valid_target_data/(2.**15)).astype(floatX)
+
+                    generator_evaluator_input = [valid_source_data,
+                                                 valid_target_data]
+
+                    generator_evaluator_output = generator_evaluator(*generator_evaluator_input)
+                    generator_valid_cost  = generator_evaluator_output[0].mean()
+
+                    valid_cost_mean += generator_valid_cost
+                    valid_batch_count += 1
+
+                valid_cost_mean = valid_cost_mean/valid_batch_count
+
                 print '=============sample length {}============================='.format(window_size)
-                print 'epoch {}, batch_cnt {} => generator cost      {}'.format(e, batch_count, generator_cost)
-                print 'epoch {}, batch_cnt {} => generator grad norm {}'.format(e, batch_count, generator_grad_norm_mean/batch_count)
+                print 'epoch {}, batch_cnt {} => generator train cost {}'.format(e, train_batch_count, generator_train_cost)
+                print 'epoch {}, batch_cnt {} => generator valid cost {}'.format(e, train_batch_count, valid_cost_mean)
+                print 'epoch {}, batch_cnt {} => generator grad norm  {}'.format(e, train_batch_count, generator_grad_norm_mean/train_batch_count)
 
-                generator_cost_list.append(generator_cost)
-                plot_learning_curve(cost_values=[generator_cost_list,],
-                                    cost_names=['Generator Cost', ],
+                generator_train_cost_list.append(generator_train_cost)
+                generator_valid_cost_list.append(valid_cost_mean)
+
+                plot_learning_curve(cost_values=[generator_train_cost_list, generator_valid_cost_list],
+                                    cost_names=['Train Cost', 'Valid Cost'],
                                     save_as=model_name+'_model_cost.png',
                                     legend_pos='upper left')
 
-            # if batch_count%5000==0:
-            #     num_samples = 10
-            #     num_sec     = 10
-            #     sampling_length = num_sec*sampling_rate/feature_size
-            #
-            #
-            #     for s in xrange(sampling_length):
-            #
-            #     # set generator initial values
-            #
-            #     # init_hidden_data = np_rng.normal(size=(num_layers, num_samples, hidden_size)).astype(floatX)
-            #     # init_hidden_data = numpy.clip(init_hidden_data, -1., 1.)
-            #     # init_cell_data   = np_rng.normal(size=(num_layers, num_samples, hidden_size)).astype(floatX)
-            #     init_hidden_data = numpy.zeros(shape=(num_layers, num_samples, hidden_size), dtype=floatX)
-            #     init_cell_data   = numpy.zeros(shape=(num_layers, num_samples, hidden_size), dtype=floatX)
-            #
-            #     generator_input = [init_input_data,
-            #                        init_hidden_data,
-            #                        init_cell_data,
-            #                        sampling_length]
-            #
-            #     sample_data = generator_sampler(*generator_input)[0]
-            #
-            #     sample_data = numpy.swapaxes(sample_data, axis1=0, axis2=1)
-            #     sample_data = sample_data.reshape((num_samples, -1))
-            #     sample_data = sample_data*(2.**15)
-            #     sample_data = sample_data.astype(numpy.int16)
-            #     save_wavfile(sample_data, model_name+'_sample')
+            if train_batch_count%1==0:
+                num_samples = 10
+                num_sec     = 10
+                sampling_length = num_sec*sampling_rate/feature_size
+
+                curr_input_data  = np_rng.normal(size=(num_samples, feature_size)).astype(floatX)
+                curr_input_data  = numpy.clip(curr_input_data, -1.0, 1.0)
+                prev_hidden_data = np_rng.normal(size=(num_layers, num_samples, hidden_size)).astype(floatX)
+                prev_hidden_data = numpy.clip(prev_hidden_data, -1.0, 1.0)
+                output_data      = numpy.zeros(shape=(sampling_length, num_samples, feature_size))
+                for s in xrange(sampling_length):
+
+
+                    generator_input = [curr_input_data,
+                                       prev_hidden_data,]
+
+                    [curr_input_data, prev_hidden_data] = generator_sampler(*generator_input)
+
+                    output_data[s] = curr_input_data
+                sample_data = numpy.swapaxes(output_data, axis1=0, axis2=1)
+                sample_data = sample_data.reshape((num_samples, -1))
+                sample_data = sample_data*(2.**15)
+                sample_data = sample_data.astype(numpy.int16)
+                save_wavfile(sample_data, model_name+'_sample')
 
 if __name__=="__main__":
     feature_size  = 160

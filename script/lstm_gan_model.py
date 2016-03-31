@@ -470,7 +470,7 @@ if __name__=="__main__":
     discriminator_output_model = set_discriminator_output_model(input_size=hidden_size*num_layers)
 
     # set optimizer
-    generator_optimizer     = RmsProp(learning_rate=learning_rate).update_params
+    generator_optimizer     = RmsProp(learning_rate=learning_rate*10.).update_params
     discriminator_optimizer = RmsProp(learning_rate=learning_rate).update_params
 
 

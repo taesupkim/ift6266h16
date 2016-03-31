@@ -410,7 +410,7 @@ def train_model(feature_size,
 
                 curr_input_data  = np_rng.normal(size=(num_samples, feature_size)).astype(floatX)
                 curr_input_data  = numpy.clip(curr_input_data, -1.0, 1.0)
-                prev_hidden_data = np_rng.normal(size=(num_layers, num_samples, hidden_size)).astype(floatX)
+                prev_hidden_data = np_rng.normal(size=(num_samples, num_layers*hidden_size)).astype(floatX)
                 prev_hidden_data = numpy.clip(prev_hidden_data, -1.0, 1.0)
                 output_data      = numpy.zeros(shape=(sampling_length, num_samples, feature_size))
                 for s in xrange(sampling_length):

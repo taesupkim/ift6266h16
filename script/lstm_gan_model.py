@@ -447,9 +447,9 @@ def train_model(feature_size,
                 save_wavfile(sample_data, model_name+'_sample')
 
 if __name__=="__main__":
-    feature_size  = 16
-    hidden_size   = 128
-    learning_rate = 1e-3
+    feature_size  = 160
+    hidden_size   = 240
+    learning_rate = 1e-4
     num_layers    = 3
 
     model_name = 'lstm_gan' \
@@ -470,7 +470,7 @@ if __name__=="__main__":
     discriminator_output_model = set_discriminator_output_model(input_size=hidden_size*num_layers)
 
     # set optimizer
-    generator_optimizer     = RmsProp(learning_rate=learning_rate*10.).update_params
+    generator_optimizer     = RmsProp(learning_rate=learning_rate*10).update_params
     discriminator_optimizer = RmsProp(learning_rate=learning_rate).update_params
 
 

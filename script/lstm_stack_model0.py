@@ -4,7 +4,7 @@ import numpy
 from theano import tensor
 from data.window import Window
 from util.utils import save_wavfile
-from layer.activations import Tanh
+from layer.activations import Tanh, Relu
 from layer.layers import LinearLayer, LstmLayer, LstmStackLayer
 from layer.layer_utils import get_tensor_output, get_model_updates, get_model_gradients
 from optimizer.rmsprop import RmsProp
@@ -60,7 +60,7 @@ def set_output_model(num_layers, hidden_size, input_size):
     layers.append(LinearLayer(input_dim=num_layers*hidden_size,
                               output_dim=num_layers*hidden_size/2,
                               name='output_layer0'))
-    layers.append(Tanh(name='output_squeeze_layer0'))
+    layers.append(Relu(name='output_squeeze_layer0'))
     layers.append(LinearLayer(input_dim=num_layers*hidden_size/2,
                               output_dim=input_size,
                               name='output_layer0'))

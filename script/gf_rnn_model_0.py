@@ -330,6 +330,8 @@ def train_model(feature_size,
             generator_grad_norm_mean += generator_grad_norm
             train_batch_count += 1
 
+
+            sampling_seed_data = []
             if train_batch_count%1==0:
                 # set valid data stream with proper length (window size)
                 valid_window_size = 100
@@ -386,6 +388,7 @@ def train_model(feature_size,
                     valid_batch_count += 1
 
                     if valid_batch_count>100:
+                        sampling_seed_data = valid_source_data
                         break
 
                 valid_cost_mean = valid_cost_mean/valid_batch_count
@@ -408,8 +411,7 @@ def train_model(feature_size,
                 num_sec     = 10
                 sampling_length = num_sec*sampling_rate/feature_size
 
-                curr_input_data  = np_rng.normal(size=(num_samples, feature_size)).astype(floatX)
-                curr_input_data  = numpy.clip(curr_input_data, -1.0, 1.0)
+                curr_input_data  = sampling_seed_data[0][:num_samples]
                 prev_hidden_data = np_rng.normal(size=(num_samples, num_layers*hidden_size)).astype(floatX)
                 prev_hidden_data = numpy.clip(prev_hidden_data, -1.0, 1.0)
                 output_data      = numpy.zeros(shape=(sampling_length, num_samples, feature_size))
@@ -429,8 +431,8 @@ def train_model(feature_size,
                 save_wavfile(sample_data, model_name+'_sample')
 
 if __name__=="__main__":
-    feature_size  = 160
-    hidden_size   = 160
+    feature_size  = 16
+    hidden_size   = 48
     learning_rate = 1e-3
     num_layers    = 4
 

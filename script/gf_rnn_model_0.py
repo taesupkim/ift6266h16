@@ -271,7 +271,7 @@ def train_model(feature_size,
 
     generator_grad_norm_mean = 0.0
 
-    init_window_size = 20
+    init_window_size = 100
     for e in xrange(num_epochs):
         window_size = init_window_size + 5*e
 
@@ -430,8 +430,8 @@ def train_model(feature_size,
                 save_wavfile(sample_data, model_name+'_sample')
 
 if __name__=="__main__":
-    feature_size  = 16
-    hidden_size   = 64
+    feature_size  = 160
+    hidden_size   = 240
     learning_rate = 1e-3
     num_layers    = 4
 
@@ -453,7 +453,7 @@ if __name__=="__main__":
                                                    num_layers=2)
 
     # set optimizer
-    generator_optimizer     = RmsProp(learning_rate=learning_rate).update_params
+    generator_optimizer = RmsProp(learning_rate=learning_rate).update_params
 
     train_model(feature_size=feature_size,
                 hidden_size=hidden_size,

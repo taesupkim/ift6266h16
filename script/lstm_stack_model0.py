@@ -264,6 +264,7 @@ def train_model(feature_size,
                 # source data
                 train_source_data = numpy.asarray(train_source_data, dtype=floatX)
                 train_source_data = numpy.swapaxes(train_source_data, axis1=0, axis2=1)
+
                 # target data
                 train_target_data = numpy.asarray(train_target_data, dtype=floatX)
                 train_target_data = numpy.swapaxes(train_target_data, axis1=0, axis2=1)
@@ -404,7 +405,7 @@ def train_model(feature_size,
 if __name__=="__main__":
     feature_size  = 16
     hidden_size   = 128
-    learning_rate = 1e-5
+    learning_rate = 1e-2
     num_layers    = 3
     init_window   = 20
 

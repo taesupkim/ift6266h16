@@ -406,8 +406,8 @@ def train_model(feature_size,
 
 if __name__=="__main__":
     feature_size  = 16
-    hidden_size   = 128
-    learning_rate = 1e-2
+    hidden_size   = 64
+    learning_rate = 1e-4
     num_layers    = 3
     init_window   = 20
 

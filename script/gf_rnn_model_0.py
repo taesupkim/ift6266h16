@@ -92,6 +92,7 @@ def set_generator_std_model(hidden_size,
 
     layers.append(LinearLayer(input_dim=hidden_size,
                               output_dim=output_size,
+                              bias=-5.0,
                               name='generator_var_linear_output'))
     layers.append(Softplus(name='generator_var_relu_output'))
     return layers
@@ -206,8 +207,8 @@ def set_generator_sampling_function(generator_rnn_model,
                                    dtype=floatX)
 
     # prev hidden data (num_layers * num_samples * input_dims))
-    prev_hidden_data = tensor.tensor3(name='prev_hidden_data',
-                                      dtype=floatX)
+    prev_hidden_data = tensor.matrix(name='prev_hidden_data',
+                                     dtype=floatX)
 
     generator_input_data_list = [cur_input_data, prev_hidden_data]
     cur_hidden_data = generator_rnn_model[0].forward(generator_input_data_list, is_training=False)[0]
@@ -222,7 +223,6 @@ def set_generator_sampling_function(generator_rnn_model,
                                         is_training=False)
 
     output_data = output_mean_data + output_std_data*theano_rng.normal(size=output_std_data.shape, dtype=floatX)
-    output_data = tensor.clip(output_data, -1., 1.)
 
     # input data
     generation_sampling_inputs  = [cur_input_data,

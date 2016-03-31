@@ -92,7 +92,6 @@ def set_generator_std_model(hidden_size,
 
     layers.append(LinearLayer(input_dim=hidden_size,
                               output_dim=output_size,
-                              bias=-5.0,
                               name='generator_var_linear_output'))
     layers.append(Softplus(name='generator_var_relu_output'))
     return layers
@@ -431,8 +430,8 @@ def train_model(feature_size,
                 save_wavfile(sample_data, model_name+'_sample')
 
 if __name__=="__main__":
-    feature_size  =  16
-    hidden_size   = 160
+    feature_size  = 16
+    hidden_size   = 64
     learning_rate = 1e-3
     num_layers    = 4
 

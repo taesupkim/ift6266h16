@@ -402,8 +402,8 @@ def train_model(feature_size,
                 save_wavfile(sample_data, model_name+'_sample')
 
 if __name__=="__main__":
-    feature_size  = 16
-    hidden_size   = 64
+    feature_size  = 160
+    hidden_size   = 240
     learning_rate = 1e-4
     num_layers    = 3
     init_window   = 100

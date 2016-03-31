@@ -406,7 +406,7 @@ if __name__=="__main__":
     hidden_size   = 64
     learning_rate = 1e-4
     num_layers    = 3
-    init_window   = 100
+    init_window   = 20
 
     model_name = 'lstm_stack_layer' \
                  + '_LAYER{}'.format(int(num_layers)) \

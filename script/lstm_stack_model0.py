@@ -8,6 +8,7 @@ from layer.activations import Tanh, Relu
 from layer.layers import LinearLayer, LstmLayer, LstmStackLayer
 from layer.layer_utils import get_tensor_output, get_model_updates, get_model_gradients
 from optimizer.rmsprop import RmsProp
+from optimizer.adagrad import AdaGrad
 from numpy.random import RandomState
 from theano.sandbox.rng_mrg import MRG_RandomStreams
 from utils.display import plot_learning_curve
@@ -423,7 +424,7 @@ if __name__=="__main__":
                                        input_size=feature_size)
 
     # set optimizer
-    optimizer = RmsProp(learning_rate=learning_rate).update_params
+    optimizer = AdaGrad(learning_rate=learning_rate).update_params
 
     # train model
     train_model(feature_size=feature_size,

@@ -286,7 +286,7 @@ def train_model(feature_size,
 
 
             sampling_seed_data = []
-            if train_batch_count%1==0:
+            if train_batch_count%100==0:
                 # set valid data stream with proper length (window size)
                 num_sec           = 10
                 sampling_length   = num_sec*sampling_rate/feature_size
@@ -374,7 +374,7 @@ def train_model(feature_size,
                                     save_as=model_name+'_model_cost.png',
                                     legend_pos='upper left')
 
-            if train_batch_count%1==0:
+            if train_batch_count%200==0:
                 num_samples = 10
                 num_sec     = 10
                 sampling_length = num_sec*sampling_rate/feature_size
@@ -404,7 +404,7 @@ def train_model(feature_size,
 if __name__=="__main__":
     feature_size  = 16
     hidden_size   = 64
-    learning_rate = 1e-4
+    learning_rate = 1e-5
     num_layers    = 3
     init_window   = 20
 

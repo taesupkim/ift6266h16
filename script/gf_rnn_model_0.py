@@ -332,7 +332,7 @@ def train_model(feature_size,
 
 
             sampling_seed_data = []
-            if train_batch_count%1==0:
+            if train_batch_count%10==0:
                 # set valid data stream with proper length (window size)
                 valid_window_size = 100
                 valid_data_stream = set_valid_datastream(feature_size=feature_size,
@@ -406,7 +406,7 @@ def train_model(feature_size,
                                     save_as=model_name+'_model_cost.png',
                                     legend_pos='upper left')
 
-            if train_batch_count%1==0:
+            if train_batch_count%100==0:
                 num_samples = 10
                 num_sec     = 10
                 sampling_length = num_sec*sampling_rate/feature_size
@@ -431,8 +431,8 @@ def train_model(feature_size,
                 save_wavfile(sample_data, model_name+'_sample')
 
 if __name__=="__main__":
-    feature_size  = 16
-    hidden_size   = 48
+    feature_size  =  16
+    hidden_size   = 160
     learning_rate = 1e-3
     num_layers    = 4
 

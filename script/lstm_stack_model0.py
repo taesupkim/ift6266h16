@@ -91,6 +91,7 @@ def set_update_function(recurrent_model,
 
     # get cost (sum over feature, and time)
     sample_cost = tensor.sqr(output_data-target_data)
+    sample_cost = sample_cost.sum(axis=2)
 
     # get model updates
     model_cost         = sample_cost.mean()
@@ -142,6 +143,7 @@ def set_evaluation_function(recurrent_model,
 
     # get cost (sum over feature, and time)
     sample_cost = tensor.sqr(output_data-target_data)
+    sample_cost = sample_cost.sum(axis=2)
 
     evaluation_function_inputs  = [source_data,
                                    target_data,]

@@ -88,7 +88,7 @@ def set_update_function(recurrent_model,
 
     # get cost (sum over feature, and time)
     sample_cost = tensor.sqr(output_data-target_data)
-    sample_cost = sample_cost.sum(axis=2)
+    sample_cost = sample_cost.sum(axis=(0, 2))
 
     # get model updates
     model_cost         = sample_cost.mean()
@@ -140,7 +140,7 @@ def set_evaluation_function(recurrent_model,
 
     # get cost (sum over feature, and time)
     sample_cost = tensor.sqr(output_data-target_data)
-    sample_cost = sample_cost.sum(axis=2)
+    sample_cost = sample_cost.sum(axis=(0, 2))
 
     evaluation_function_inputs  = [source_data,
                                    target_data,]
@@ -404,8 +404,8 @@ def train_model(feature_size,
 if __name__=="__main__":
     feature_size  = 160
     hidden_size   = 240
-    learning_rate = 1e-4
-    num_layers    = 3
+    learning_rate = 1e-3
+    num_layers    = 2
     init_window   = 100
 
     model_name = 'lstm_stack_layer' \

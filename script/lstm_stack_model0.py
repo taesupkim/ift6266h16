@@ -173,7 +173,7 @@ def set_generation_function(recurrent_model,
     [new_hidden_data, new_cell_data] = recurrent_model[-1].forward(input_list, is_training=False)
 
     # get prediction data
-    new_input_data = get_tensor_output(input=new_hidden_data.dimshuffle(0, 2, 1, 3).flatten(3),
+    new_input_data = get_tensor_output(input=new_hidden_data.dimshuffle(1, 0, 2).flatten(2),
                                        layers=output_model,
                                        is_training=False)
 

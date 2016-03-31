@@ -37,7 +37,7 @@ def set_generator_recurrent_model(input_size,
     layers.append(LstmAllLoopGaussianLayer(input_dim=input_size,
                                            hidden_dim=hidden_size,
                                            num_rnn_layers=num_layers,
-                                           num_lin_layers=num_layers,
+                                           num_lin_layers=num_layers-1,
                                            name='generator_rnn_model'))
     return layers
 

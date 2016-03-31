@@ -428,7 +428,7 @@ def train_model(feature_size,
                 num_sec     = 10
                 sampling_length = num_sec*sampling_rate/feature_size
                 # set generator initial values
-                init_input_data  = source_data[1]
+                init_input_data  = source_data[1][:num_samples].reshape(num_samples, feature_size)
                 init_hidden_data = np_rng.normal(size=(num_layers, num_samples, hidden_size)).astype(floatX)
                 init_hidden_data = numpy.clip(init_hidden_data, -1., 1.)
                 init_cell_data   = np_rng.normal(size=(num_layers, num_samples, hidden_size)).astype(floatX)
@@ -450,8 +450,8 @@ def train_model(feature_size,
 
 if __name__=="__main__":
     feature_size  = 16
-    hidden_size   = 48
-    learning_rate = 1e-3
+    hidden_size   = 128
+    learning_rate = 1e-2
     num_layers    = 3
 
     model_name = 'lstm_gan' \

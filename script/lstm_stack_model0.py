@@ -251,7 +251,7 @@ def train_model(feature_size,
                                                       generator_mean_model=generator_mean_model,
                                                       generator_std_model=generator_std_model,
                                                       generator_optimizer=generator_optimizer,
-                                                      grad_clipping=0.0)
+                                                      grad_clipping=20.0)
     print '{}.sec'.format(time()-t)
 
     # generator evaluator

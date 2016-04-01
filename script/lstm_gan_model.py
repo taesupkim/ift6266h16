@@ -401,7 +401,8 @@ def train_model(feature_size,
                 print 'epoch {}, batch_cnt {} => discriminator cost {}'.format(e, batch_count, discriminator_cost)
                 print 'epoch {}, batch_cnt {} => input data    cost {}'.format(e, batch_count, input_cost_data.mean())
                 print 'epoch {}, batch_cnt {} => sample data   cost {}'.format(e, batch_count, sample_cost_data.mean())
-
+                print 'epoch {}, batch_cnt {} => generator gradnorm {}'.format(e, batch_count, generator_grad_norm_mean/batch_count)
+                print 'epoch {}, batch_cnt {} => discriminator      {}'.format(e, batch_count, generator_grad_norm_mean/batch_count)
                 generator_cost_list.append(generator_cost)
                 discriminator_cost_list.append(discriminator_cost)
                 plot_learning_curve(cost_values=[generator_cost_list, discriminator_cost_list],

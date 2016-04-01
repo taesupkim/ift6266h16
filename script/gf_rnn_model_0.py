@@ -65,17 +65,14 @@ def set_generator_mean_model(hidden_size,
                              output_size,
                              num_layers):
     layers = []
+    layers.append(LinearLayer(input_dim=hidden_size*num_layers,
+                              output_dim=hidden_size*num_layers/2,
+                              name='generator_mean_linear_layer0'))
+    layers.append(Relu(name='generator_mean_relu_layer0'))
 
-    for l in xrange(num_layers-1):
-        layers.append(LinearLayer(input_dim=hidden_size,
-                                  output_dim=hidden_size,
-                                  name='generator_mean_linear_layer{}'.format(l)))
-        layers.append(Relu(name='generator_mean_relu_layer{}'.format(l)))
-
-    layers.append(LinearLayer(input_dim=hidden_size,
+    layers.append(LinearLayer(input_dim=hidden_size*num_layers/2,
                               output_dim=output_size,
                               name='generator_mean_linear_output'))
-
     layers.append(Tanh(name='generator_mean_tanh_output'))
     return layers
 
@@ -84,13 +81,12 @@ def set_generator_std_model(hidden_size,
                             num_layers):
     layers = []
 
-    for l in xrange(num_layers-1):
-        layers.append(LinearLayer(input_dim=hidden_size,
-                                  output_dim=hidden_size,
-                                  name='generator_var_linear_layer{}'.format(l)))
-        layers.append(Relu(name='generator_var_relu_layer{}'.format(l)))
+    layers.append(LinearLayer(input_dim=hidden_size*num_layers,
+                              output_dim=hidden_size*num_layers/2,
+                              name='generator_var_linear_layer0'))
+    layers.append(Relu(name='generator_var_relu_layer0'))
 
-    layers.append(LinearLayer(input_dim=hidden_size,
+    layers.append(LinearLayer(input_dim=hidden_size*num_layers/2,
                               output_dim=output_size,
                               name='generator_var_linear_output'))
     layers.append(Softplus(name='generator_var_relu_output'))
@@ -115,6 +111,7 @@ def set_generator_update_function(generator_rnn_model,
 
     # get generator hidden data
     hidden_data = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)[0]
+    hidden_data = hidden_data.dimshuffle(0, 2, 1, 3).flatten(3)
 
     # get generator output data
     output_mean_data = get_tensor_output(input=hidden_data,
@@ -124,11 +121,12 @@ def set_generator_update_function(generator_rnn_model,
                                         layers=generator_std_model,
                                         is_training=True)
 
+    # get generator cost (time_length x num_samples x hidden_size)
     generator_cost  = -0.5*tensor.inv(2.0*tensor.sqr(output_std_data))*tensor.sqr(output_mean_data-target_data)
     generator_cost += -0.5*tensor.log(2.0*tensor.sqr(output_std_data)*numpy.pi)
 
     # set generator update
-    generator_updates_cost = generator_cost.mean()
+    generator_updates_cost = tensor.sum(generator_cost, axis=2).mean()
     generator_updates_dict = get_model_updates(layers=generator_rnn_model+generator_mean_model+generator_std_model,
                                                cost=generator_updates_cost,
                                                optimizer=generator_optimizer,
@@ -145,7 +143,8 @@ def set_generator_update_function(generator_rnn_model,
                                  target_data,]
 
     # set generator update outputs
-    generator_updates_outputs = [generator_cost, gradient_norm]
+    generator_updates_outputs = [generator_cost,
+                                 gradient_norm]
 
     # set generator update function
     generator_updates_function = theano.function(inputs=generator_updates_inputs,
@@ -171,6 +170,7 @@ def set_generator_evaluation_function(generator_rnn_model,
 
     # get generator hidden data
     hidden_data = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)[0]
+    hidden_data = hidden_data.dimshuffle(0, 2, 1, 3).flatten(3)
 
     # get generator output data
     output_mean_data = get_tensor_output(input=hidden_data,
@@ -180,6 +180,7 @@ def set_generator_evaluation_function(generator_rnn_model,
                                         layers=generator_std_model,
                                         is_training=True)
 
+    # get generator cost (time_length x num_samples x hidden_size)
     generator_cost  = -0.5*tensor.inv(2.0*tensor.sqr(output_std_data))*tensor.sqr(output_mean_data-target_data)
     generator_cost += -0.5*tensor.log(2.0*tensor.sqr(output_std_data)*numpy.pi)
 
@@ -188,7 +189,7 @@ def set_generator_evaluation_function(generator_rnn_model,
                                   target_data,]
 
     # set generator evaluate outputs
-    generator_evaluate_outputs = [generator_cost, ]
+    generator_evaluate_outputs = [generator_cost,]
 
     # set generator evaluate function
     generator_evaluate_function = theano.function(inputs=generator_evaluate_inputs,
@@ -206,11 +207,15 @@ def set_generator_sampling_function(generator_rnn_model,
                                    dtype=floatX)
 
     # prev hidden data (num_layers * num_samples * input_dims))
-    prev_hidden_data = tensor.matrix(name='prev_hidden_data',
-                                     dtype=floatX)
+    prev_hidden_data = tensor.tensor3(name='prev_hidden_data',
+                                      dtype=floatX)
 
-    generator_input_data_list = [cur_input_data, prev_hidden_data]
+
+    # get current hidden data
+    generator_input_data_list = [cur_input_data,
+                                 prev_hidden_data]
     cur_hidden_data = generator_rnn_model[0].forward(generator_input_data_list, is_training=False)[0]
+    cur_hidden_data = cur_hidden_data.dimshuffle(1, 0, 2).flatten(2)
 
 
     # get generator output data
@@ -220,7 +225,6 @@ def set_generator_sampling_function(generator_rnn_model,
     output_std_data = get_tensor_output(input=cur_hidden_data,
                                         layers=generator_std_model,
                                         is_training=False)
-
     output_data = output_mean_data + output_std_data*theano_rng.normal(size=output_std_data.shape, dtype=floatX)
 
     # input data
@@ -293,12 +297,12 @@ def train_model(feature_size,
 
             # source data
             single_data = batch_data[0]
-            single_data = single_data.reshape(window_size, feature_size)
+            single_data = single_data.reshape(single_data.shape[0]/feature_size, feature_size)
             train_source_data.append(single_data)
 
             # target data
             single_data = batch_data[1]
-            single_data = single_data.reshape(window_size, feature_size)
+            single_data = single_data.reshape(single_data.shape[0]/feature_size, feature_size)
             train_target_data.append(single_data)
 
             train_batch_size += 1
@@ -341,7 +345,7 @@ def train_model(feature_size,
 
                 # for each batch
                 valid_batch_count = 0
-                valid_batch_size = 0
+                valid_batch_size  = 0
                 valid_source_data = []
                 valid_target_data = []
                 valid_cost_mean = 0.0
@@ -411,8 +415,8 @@ def train_model(feature_size,
                 sampling_length = num_sec*sampling_rate/feature_size
 
                 curr_input_data  = sampling_seed_data[0][:num_samples]
-                prev_hidden_data = np_rng.normal(size=(num_samples, num_layers*hidden_size)).astype(floatX)
-                prev_hidden_data = numpy.clip(prev_hidden_data, -1.0, 1.0)
+                prev_hidden_data = np_rng.normal(size=(num_layers, num_samples, hidden_size)).astype(floatX)
+                prev_hidden_data = numpy.tanh(prev_hidden_data)
                 output_data      = numpy.zeros(shape=(sampling_length, num_samples, feature_size))
                 for s in xrange(sampling_length):
 
@@ -431,8 +435,8 @@ def train_model(feature_size,
 
 if __name__=="__main__":
     feature_size  = 160
-    hidden_size   = 240
-    learning_rate = 1e-5
+    hidden_size   = 160
+    learning_rate = 1e-2
     num_layers    = 4
 
     model_name = 'gf_rnn_normal' \
@@ -445,12 +449,12 @@ if __name__=="__main__":
     generator_rnn_model = set_generator_recurrent_model(input_size=feature_size,
                                                         hidden_size=hidden_size,
                                                         num_layers=num_layers)
-    generator_mean_model = set_generator_mean_model(hidden_size=hidden_size*num_layers,
+    generator_mean_model = set_generator_mean_model(hidden_size=hidden_size,
                                                     output_size=feature_size,
-                                                    num_layers=2)
-    generator_std_model  = set_generator_std_model(hidden_size=hidden_size*num_layers,
+                                                    num_layers=num_layers)
+    generator_std_model  = set_generator_std_model(hidden_size=hidden_size,
                                                    output_size=feature_size,
-                                                   num_layers=2)
+                                                   num_layers=num_layers)
 
     # set optimizer
     generator_optimizer = RmsProp(learning_rate=learning_rate).update_params

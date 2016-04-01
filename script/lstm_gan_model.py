@@ -456,7 +456,6 @@ if __name__=="__main__":
                  + '_FEATURE{}'.format(int(feature_size)) \
                  + '_HIDDEN{}'.format(int(hidden_size)) \
                  + '_LAYERS{}'.format(int(num_layers)) \
-                 + '_LR{}'.format(int(-numpy.log10(learning_rate))) \
 
     # generator model
     generator_rnn_model = set_generator_recurrent_model(input_size=feature_size,
@@ -470,8 +469,8 @@ if __name__=="__main__":
     discriminator_output_model = set_discriminator_output_model(input_size=hidden_size*num_layers)
 
     # set optimizer
-    generator_optimizer     = RmsProp(learning_rate=learning_rate*10).update_params
-    discriminator_optimizer = RmsProp(learning_rate=learning_rate).update_params
+    generator_optimizer     = RmsProp(learning_rate=0.01).update_params
+    discriminator_optimizer = RmsProp(learning_rate=0.00001).update_params
 
 
     train_model(feature_size=feature_size,

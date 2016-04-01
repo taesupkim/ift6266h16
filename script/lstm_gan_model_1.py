@@ -8,7 +8,6 @@ from layer.activations import Tanh, Logistic, Relu
 from layer.layers import LinearLayer, LstmAllLoopGaussianLayer, LstmStackLayer
 from layer.layer_utils import get_tensor_output, get_model_updates, get_lstm_outputs, get_model_gradients
 from optimizer.rmsprop import RmsProp
-from optimizer.adagrad import AdaGrad
 from numpy.random import RandomState
 from theano.sandbox.rng_mrg import MRG_RandomStreams
 from utils.display import plot_learning_curve
@@ -110,6 +109,7 @@ def set_generator_update_function(generator_rnn_model,
     discriminator_sample_score_data = get_tensor_output(input=discriminator_sample_hidden_data,
                                          layers=discriminator_output_model,
                                          is_training=True)
+    discriminator_sample_score_data = discriminator_sample_score_data[0]
 
     # get cost based on discriminator (binary cross-entropy over all data)
     # sum over generator cost over time_length and output_dims, then mean over samples
@@ -195,6 +195,7 @@ def set_discriminator_update_function(generator_rnn_model,
     discriminator_input_score_data  = get_tensor_output(input=discriminator_input_hidden_data,
                                                         layers=discriminator_output_model,
                                                         is_training=True)
+    discriminator_input_score_data  = discriminator_input_score_data[0]
 
     # get discriminator sample cost data
     discriminator_sample_hidden_data = discriminator_rnn_model[0].forward(discriminator_sample_data_list, is_training=True)[0]
@@ -203,6 +204,7 @@ def set_discriminator_update_function(generator_rnn_model,
     discriminator_sample_score_data  = get_tensor_output(input=discriminator_sample_hidden_data,
                                                          layers=discriminator_output_model,
                                                          is_training=True)
+    discriminator_sample_score_data = discriminator_sample_score_data[0]
 
 
     # get cost based on discriminator (binary cross-entropy over all data)
@@ -448,8 +450,8 @@ def train_model(feature_size,
                 save_wavfile(sample_data, model_name+'_sample')
 
 if __name__=="__main__":
-    feature_size  =  32
-    hidden_size   = 128
+    feature_size  = 160
+    hidden_size   = 240
     learning_rate = 1e-4
     num_layers    = 3
 
@@ -457,7 +459,6 @@ if __name__=="__main__":
                  + '_FEATURE{}'.format(int(feature_size)) \
                  + '_HIDDEN{}'.format(int(hidden_size)) \
                  + '_LAYERS{}'.format(int(num_layers)) \
-                 + '_LR{}'.format(int(-numpy.log10(learning_rate))) \
 
     # generator model
     generator_rnn_model = set_generator_recurrent_model(input_size=feature_size,
@@ -471,8 +472,8 @@ if __name__=="__main__":
     discriminator_output_model = set_discriminator_output_model(input_size=hidden_size*num_layers)
 
     # set optimizer
-    generator_optimizer     = AdaGrad(learning_rate=learning_rate*10.).update_params
-    discriminator_optimizer = AdaGrad(learning_rate=learning_rate).update_params
+    generator_optimizer     = RmsProp(learning_rate=0.01).update_params
+    discriminator_optimizer = RmsProp(learning_rate=0.00001).update_params
 
 
     train_model(feature_size=feature_size,

@@ -300,7 +300,7 @@ def train_model(feature_size,
                                                       discriminator_rnn_model=discriminator_rnn_model,
                                                       discriminator_output_model=discriminator_output_model,
                                                       generator_optimizer=generator_optimizer,
-                                                      grad_clipping=1.0)
+                                                      grad_clipping=0.0)
 
     # discriminator updater
     print 'DEBUGGING DISCRIMINATOR UPDATE FUNCTION '
@@ -308,7 +308,7 @@ def train_model(feature_size,
                                                               discriminator_rnn_model=discriminator_rnn_model,
                                                               discriminator_output_model=discriminator_output_model,
                                                               discriminator_optimizer=discriminator_optimizer,
-                                                              grad_clipping=1.0)
+                                                              grad_clipping=0.0)
 
     # sample generator
     print 'DEBUGGING SAMPLE GENERATOR FUNCTION '
@@ -324,9 +324,9 @@ def train_model(feature_size,
     generator_grad_norm_mean     = 0.0
     discriminator_grad_norm_mean = 0.0
 
-    init_window_size = 50
+    init_window_size = 1
     for e in xrange(num_epochs):
-        window_size = init_window_size + 5*e
+        window_size = init_window_size + 1*e
 
         # set data stream with proper length (window size)
         data_stream = set_datastream(feature_size=feature_size,

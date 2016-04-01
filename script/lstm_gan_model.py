@@ -300,7 +300,7 @@ def train_model(feature_size,
                                                       discriminator_rnn_model=discriminator_rnn_model,
                                                       discriminator_output_model=discriminator_output_model,
                                                       generator_optimizer=generator_optimizer,
-                                                      grad_clipping=0.0)
+                                                      grad_clipping=1.0)
 
     # discriminator updater
     print 'DEBUGGING DISCRIMINATOR UPDATE FUNCTION '
@@ -308,7 +308,7 @@ def train_model(feature_size,
                                                               discriminator_rnn_model=discriminator_rnn_model,
                                                               discriminator_output_model=discriminator_output_model,
                                                               discriminator_optimizer=discriminator_optimizer,
-                                                              grad_clipping=0.0)
+                                                              grad_clipping=1.0)
 
     # sample generator
     print 'DEBUGGING SAMPLE GENERATOR FUNCTION '
@@ -402,7 +402,7 @@ def train_model(feature_size,
                 print 'epoch {}, batch_cnt {} => input data    cost {}'.format(e, batch_count, input_cost_data.mean())
                 print 'epoch {}, batch_cnt {} => sample data   cost {}'.format(e, batch_count, sample_cost_data.mean())
                 print 'epoch {}, batch_cnt {} => generator gradnorm {}'.format(e, batch_count, generator_grad_norm_mean/batch_count)
-                print 'epoch {}, batch_cnt {} => discriminator      {}'.format(e, batch_count, generator_grad_norm_mean/batch_count)
+                print 'epoch {}, batch_cnt {} => discriminator      {}'.format(e, batch_count, discriminator_grad_norm_mean/batch_count)
                 generator_cost_list.append(generator_cost)
                 discriminator_cost_list.append(discriminator_cost)
                 plot_learning_curve(cost_values=[generator_cost_list, discriminator_cost_list],

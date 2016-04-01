@@ -430,9 +430,9 @@ def train_model(feature_size,
 
 if __name__=="__main__":
     feature_size  = 160
-    hidden_size   = 160
+    hidden_size   = 320
     learning_rate = 1e-2
-    num_layers    = 4
+    num_layers    = 2
 
     model_name = 'gf_rnn_normal' \
                  + '_FEATURE{}'.format(int(feature_size)) \

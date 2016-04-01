@@ -4,21 +4,25 @@ import numpy
 from theano import tensor
 from data.window import Window
 from util.utils import save_wavfile
-from layer.activations import Tanh, Relu
-from layer.layers import LinearLayer, LstmLayer, LstmStackLayer
-from layer.layer_utils import get_tensor_output, get_model_updates, get_model_gradients
+from layer.activations import Tanh, Logistic, Relu, Softplus
+from layer.layers import LinearLayer, LstmStackLayer
+from layer.layer_utils import get_tensor_output, get_model_updates, get_lstm_outputs, get_model_gradients
 from optimizer.rmsprop import RmsProp
 from optimizer.adagrad import AdaGrad
 from numpy.random import RandomState
 from theano.sandbox.rng_mrg import MRG_RandomStreams
 from utils.display import plot_learning_curve
-from fuel.datasets.hdf5 import H5PYDataset
 from time import time
+from utils.utils import merge_dicts
 theano_rng = MRG_RandomStreams(42)
 np_rng = RandomState(42)
-sampling_rate = 16000
 
 floatX = theano.config.floatX
+sampling_rate = 16000
+
+from fuel.datasets.hdf5 import H5PYDataset
+from fuel.utils import find_in_data_path
+
 class YouTubeAudio(H5PYDataset):
     def __init__(self, youtube_id, **kwargs):
         super(YouTubeAudio, self).__init__(
@@ -48,178 +52,228 @@ def set_valid_datastream(feature_size=16000,
                          data_stream=data_stream)
     return data_stream
 
-def set_recurrent_model(input_size, hidden_size, num_layers):
+def set_generator_recurrent_model(input_size,
+                                  hidden_size,
+                                  num_layers):
     layers = []
     layers.append(LstmStackLayer(input_dim=input_size,
                                  hidden_dim=hidden_size,
                                  num_layers=num_layers,
-                                 name='recurrent_model'))
+                                 name='generator_rnn_model'))
     return layers
 
-def set_output_model(num_layers, hidden_size, input_size):
+def set_generator_mean_model(hidden_size,
+                             output_size,
+                             num_layers):
     layers = []
-    layers.append(LinearLayer(input_dim=num_layers*hidden_size,
-                              output_dim=num_layers,
-                              name='output_layer0'))
-    layers.append(Tanh(name='output_squeeze_layer0'))
-    layers.append(LinearLayer(input_dim=num_layers,
-                              output_dim=input_size,
-                              name='output_layer1'))
-    layers.append(Tanh(name='output_squeeze_layer1'))
+    layers.append(LinearLayer(input_dim=hidden_size*num_layers,
+                              output_dim=hidden_size*num_layers/2,
+                              name='generator_mean_linear_layer0'))
+    layers.append(Relu(name='generator_mean_relu_layer0'))
+
+    layers.append(LinearLayer(input_dim=hidden_size*num_layers/2,
+                              output_dim=output_size,
+                              name='generator_mean_linear_output'))
+    layers.append(Tanh(name='generator_mean_tanh_output'))
     return layers
 
-def set_update_function(recurrent_model,
-                        output_model,
-                        optimizer,
-                        grad_clip=0.0):
-    # set source data (time_length * num_samples * input_dims)
+def set_generator_std_model(hidden_size,
+                            output_size,
+                            num_layers):
+    layers = []
+
+    layers.append(LinearLayer(input_dim=hidden_size*num_layers,
+                              output_dim=hidden_size*num_layers/2,
+                              name='generator_var_linear_layer0'))
+    layers.append(Relu(name='generator_var_relu_layer0'))
+
+    layers.append(LinearLayer(input_dim=hidden_size*num_layers/2,
+                              output_dim=output_size,
+                              name='generator_var_linear_output'))
+    layers.append(Softplus(name='generator_var_relu_output'))
+    return layers
+
+
+def set_generator_update_function(generator_rnn_model,
+                                  generator_mean_model,
+                                  generator_std_model,
+                                  generator_optimizer,
+                                  grad_clipping):
+
+    # input data (time length * num_samples * input_dims)
     source_data = tensor.tensor3(name='source_data',
                                  dtype=floatX)
 
-    # set target data (time_length * num_samples * output_dims)
     target_data = tensor.tensor3(name='target_data',
                                  dtype=floatX)
 
-    # get hidden data
-    input_list  = [source_data,]
-    hidden_data = recurrent_model[-1].forward(input_list, is_training=True)[0]
+    # set generator input data list
+    generator_input_data_list = [source_data,]
+
+    # get generator hidden data
+    hidden_data = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)[0]
     hidden_data = hidden_data.dimshuffle(0, 2, 1, 3).flatten(3)
 
-    # get prediction data
-    output_data = get_tensor_output(input=hidden_data,
-                                    layers=output_model,
-                                    is_training=True)
+    # get generator output data
+    output_mean_data = get_tensor_output(input=hidden_data,
+                                         layers=generator_mean_model,
+                                         is_training=True)
+    output_std_data = get_tensor_output(input=hidden_data,
+                                        layers=generator_std_model,
+                                        is_training=True)
 
-    # get cost (sum over feature, and time)
-    sample_cost = tensor.sqr(output_data-target_data)
+    # get generator cost (time_length x num_samples x hidden_size)
+    generator_cost  = -0.5*tensor.inv(2.0*tensor.sqr(output_std_data))*tensor.sqr(output_mean_data-target_data)
+    generator_cost += -0.5*tensor.log(2.0*tensor.sqr(output_std_data)*numpy.pi)
 
-    # get model updates
-    model_cost         = sample_cost.mean()
-    model_updates_dict = get_model_updates(layers=recurrent_model+output_model,
-                                           cost=model_cost,
-                                           optimizer=optimizer,
-                                           use_grad_clip=grad_clip)
+    # set generator update
+    generator_updates_cost = tensor.sum(generator_cost, axis=2).mean()
+    generator_updates_dict = get_model_updates(layers=generator_rnn_model+generator_mean_model+generator_std_model,
+                                               cost=generator_updates_cost,
+                                               optimizer=generator_optimizer,
+                                               use_grad_clip=grad_clipping)
 
-
-    gradient_dict  = get_model_gradients(recurrent_model+output_model, model_cost)
+    gradient_dict  = get_model_gradients(generator_rnn_model+generator_mean_model+generator_std_model, generator_updates_cost)
     gradient_norm  = 0.
     for grad in gradient_dict:
         gradient_norm += tensor.sum(grad**2)
         gradient_norm  = tensor.sqrt(gradient_norm)
 
+    # set generator update inputs
+    generator_updates_inputs  = [source_data,
+                                 target_data,]
 
-    update_function_inputs  = [source_data,
-                               target_data,]
-    update_function_outputs = [output_data,
-                               sample_cost,
-                               gradient_norm]
+    # set generator update outputs
+    generator_updates_outputs = [generator_cost,
+                                 gradient_norm]
 
-    update_function = theano.function(inputs=update_function_inputs,
-                                      outputs=update_function_outputs,
-                                      updates=model_updates_dict,
-                                      on_unused_input='ignore')
+    # set generator update function
+    generator_updates_function = theano.function(inputs=generator_updates_inputs,
+                                                 outputs=generator_updates_outputs,
+                                                 updates=generator_updates_dict,
+                                                 on_unused_input='ignore')
 
-    return update_function
+    return generator_updates_function
 
-def set_evaluation_function(recurrent_model,
-                            output_model):
-    # set source data (time_length * num_samples * input_dims)
+def set_generator_evaluation_function(generator_rnn_model,
+                                      generator_mean_model,
+                                      generator_std_model):
+
+    # input data (time length * num_samples * input_dims)
     source_data = tensor.tensor3(name='source_data',
                                  dtype=floatX)
 
-    # set target data (time_length * num_samples * output_dims)
     target_data = tensor.tensor3(name='target_data',
                                  dtype=floatX)
 
-    # get hidden data
-    input_list  = [source_data,]
-    hidden_data = recurrent_model[-1].forward(input_list, is_training=True)[0]
+    # set generator input data list
+    generator_input_data_list = [source_data,]
+
+    # get generator hidden data
+    hidden_data = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)[0]
     hidden_data = hidden_data.dimshuffle(0, 2, 1, 3).flatten(3)
 
-    # get prediction data
-    output_data = get_tensor_output(input=hidden_data,
-                                    layers=output_model,
-                                    is_training=True)
+    # get generator output data
+    output_mean_data = get_tensor_output(input=hidden_data,
+                                         layers=generator_mean_model,
+                                         is_training=True)
+    output_std_data = get_tensor_output(input=hidden_data,
+                                        layers=generator_std_model,
+                                        is_training=True)
 
-    # get cost (sum over feature, and time)
-    sample_cost = tensor.sqr(output_data-target_data)
+    # get generator cost (time_length x num_samples x hidden_size)
+    generator_cost  = -0.5*tensor.inv(2.0*tensor.sqr(output_std_data))*tensor.sqr(output_mean_data-target_data)
+    generator_cost += -0.5*tensor.log(2.0*tensor.sqr(output_std_data)*numpy.pi)
 
-    evaluation_function_inputs  = [source_data,
-                                   target_data,]
-    evaluation_function_outputs = [output_data,
-                                   sample_cost]
+    # set generator evaluate inputs
+    generator_evaluate_inputs  = [source_data,
+                                  target_data,]
 
-    evaluation_function = theano.function(inputs=evaluation_function_inputs,
-                                          outputs=evaluation_function_outputs,
-                                          on_unused_input='ignore')
+    # set generator evaluate outputs
+    generator_evaluate_outputs = [generator_cost,]
 
-    return evaluation_function
+    # set generator evaluate function
+    generator_evaluate_function = theano.function(inputs=generator_evaluate_inputs,
+                                                  outputs=generator_evaluate_outputs,
+                                                  on_unused_input='ignore')
 
-def set_generation_function(recurrent_model,
-                            output_model):
+    return generator_evaluate_function
 
-    # set input data (num_samples,features)
-    input_data = tensor.matrix(name='input_data',
-                               dtype=floatX)
+def set_generator_sampling_function(generator_rnn_model,
+                                    generator_mean_model,
+                                    generator_std_model):
 
-    # set hidden/cell data (num_layer, num_samples, features)
-    hidden_data = tensor.tensor3(name='hidden_data',
-                                 dtype=floatX)
-    cell_data = tensor.tensor3(name='cell_data',
-                               dtype=floatX)
+    # input data (num_samples *input_dims)
+    cur_input_data = tensor.matrix(name='cur_input_data',
+                                   dtype=floatX)
 
-    # set input list
-    input_list = [input_data, hidden_data, cell_data]
-    # get output data
-    [new_hidden_data, new_cell_data] = recurrent_model[-1].forward(input_list, is_training=False)
+    # prev hidden data (num_layers * num_samples * input_dims))
+    prev_hidden_data = tensor.tensor3(name='prev_hidden_data',
+                                      dtype=floatX)
 
-    # get prediction data
-    new_input_data = get_tensor_output(input=new_hidden_data.dimshuffle(1, 0, 2).flatten(2),
-                                       layers=output_model,
-                                       is_training=False)
 
-    generation_function_inputs  = [input_data,
-                                   hidden_data,
-                                   cell_data]
-    generation_function_outputs = [new_input_data,
-                                   new_hidden_data,
-                                   new_cell_data]
+    # get current hidden data
+    generator_input_data_list = [cur_input_data,
+                                 prev_hidden_data]
+    cur_hidden_data = generator_rnn_model[0].forward(generator_input_data_list, is_training=False)[0]
+    cur_hidden_data = cur_hidden_data.dimshuffle(1, 0, 2).flatten(2)
 
-    generation_function = theano.function(inputs=generation_function_inputs,
-                                          outputs=generation_function_outputs,
-                                          on_unused_input='ignore')
-    return generation_function
+
+    # get generator output data
+    output_mean_data = get_tensor_output(input=cur_hidden_data,
+                                         layers=generator_mean_model,
+                                         is_training=False)
+    output_std_data = get_tensor_output(input=cur_hidden_data,
+                                        layers=generator_std_model,
+                                        is_training=False)
+    output_data = output_mean_data + output_std_data*theano_rng.normal(size=output_std_data.shape, dtype=floatX)
+
+    # input data
+    generation_sampling_inputs  = [cur_input_data,
+                                   prev_hidden_data]
+    generation_sampling_outputs = [output_data,
+                                   cur_hidden_data]
+
+    generation_sampling_function = theano.function(inputs=generation_sampling_inputs,
+                                                   outputs=generation_sampling_outputs,
+                                                   on_unused_input='ignore')
+    return generation_sampling_function
 
 def train_model(feature_size,
                 hidden_size,
                 num_layers,
-                init_window_size,
-                recurrent_model,
-                output_model,
-                model_optimizer,
+                generator_rnn_model,
+                generator_mean_model,
+                generator_std_model,
+                generator_optimizer,
                 num_epochs,
                 model_name):
 
-    print 'COMPILING GENERATOR UPDATE FUNCTION '
-    t=time()
-    update_function = set_update_function(recurrent_model=recurrent_model,
-                                          output_model=output_model,
-                                          optimizer=model_optimizer,
-                                          grad_clip=2.0)
-    print '%.2f SEC '%(time()-t)
+    # generator updater
+    print 'DEBUGGING GENERATOR UPDATE FUNCTION '
+    t = time()
+    generator_updater = set_generator_update_function(generator_rnn_model=generator_rnn_model,
+                                                      generator_mean_model=generator_mean_model,
+                                                      generator_std_model=generator_std_model,
+                                                      generator_optimizer=generator_optimizer,
+                                                      grad_clipping=0.0)
+    print '{}.sec'.format(time()-t)
 
-    print 'COMPILING GENERATOR EVALUATION FUNCTION '
-    t=time()
-    evaluation_function = set_evaluation_function(recurrent_model=recurrent_model,
-                                                output_model=output_model)
-    print '%.2f SEC '%(time()-t)
+    # generator evaluator
+    print 'DEBUGGING GENERATOR EVALUATION FUNCTION '
+    t = time()
+    generator_evaluator = set_generator_evaluation_function(generator_rnn_model=generator_rnn_model,
+                                                            generator_mean_model=generator_mean_model,
+                                                            generator_std_model=generator_std_model)
+    print '{}.sec'.format(time()-t)
 
-    print 'COMPILING GENERATOR SAMPLING FUNCTION '
-    t=time()
-    generation_function = set_generation_function(recurrent_model=recurrent_model,
-                                                  output_model=output_model)
-    print '%.2f SEC '%(time()-t)
-
+    # generator sampler
+    print 'DEBUGGING GENERATOR SAMPLING FUNCTION '
+    t = time()
+    generator_sampler = set_generator_sampling_function(generator_rnn_model=generator_rnn_model,
+                                                        generator_mean_model=generator_mean_model,
+                                                        generator_std_model=generator_std_model)
+    print '{}.sec'.format(time()-t)
 
     print 'START TRAINING'
     # for each epoch
@@ -228,8 +282,9 @@ def train_model(feature_size,
 
     generator_grad_norm_mean = 0.0
 
+    init_window_size = 100
     for e in xrange(num_epochs):
-        window_size = init_window_size + 10*e
+        window_size = init_window_size + 5*e
 
         # set train data stream with proper length (window size)
         train_data_stream = set_train_datastream(feature_size=feature_size,
@@ -249,12 +304,12 @@ def train_model(feature_size,
 
             # source data
             single_data = batch_data[0]
-            single_data = single_data.reshape(window_size, feature_size)
+            single_data = single_data.reshape(single_data.shape[0]/feature_size, feature_size)
             train_source_data.append(single_data)
 
             # target data
             single_data = batch_data[1]
-            single_data = single_data.reshape(window_size, feature_size)
+            single_data = single_data.reshape(single_data.shape[0]/feature_size, feature_size)
             train_target_data.append(single_data)
 
             train_batch_size += 1
@@ -265,7 +320,6 @@ def train_model(feature_size,
                 # source data
                 train_source_data = numpy.asarray(train_source_data, dtype=floatX)
                 train_source_data = numpy.swapaxes(train_source_data, axis1=0, axis2=1)
-
                 # target data
                 train_target_data = numpy.asarray(train_target_data, dtype=floatX)
                 train_target_data = numpy.swapaxes(train_target_data, axis1=0, axis2=1)
@@ -279,27 +333,26 @@ def train_model(feature_size,
             generator_updater_input = [train_source_data,
                                        train_target_data]
 
-            generator_updater_output = update_function(*generator_updater_input)
-            generator_train_cost = generator_updater_output[1].mean()
-            generator_grad_norm  = generator_updater_output[2]
+            generator_updater_output = generator_updater(*generator_updater_input)
+            generator_train_cost = generator_updater_output[0].mean()
+            generator_grad_norm  = generator_updater_output[1]
 
             generator_grad_norm_mean += generator_grad_norm
             train_batch_count += 1
 
 
             sampling_seed_data = []
-            if train_batch_count%100==0:
+            if train_batch_count%10==0:
                 # set valid data stream with proper length (window size)
-                num_sec           = 10
-                sampling_length   = num_sec*sampling_rate/feature_size
+                valid_window_size = 100
                 valid_data_stream = set_valid_datastream(feature_size=feature_size,
-                                                         window_size=sampling_length)
+                                                         window_size=valid_window_size)
                 # get train data iterator
                 valid_data_iterator = valid_data_stream.get_epoch_iterator()
 
                 # for each batch
                 valid_batch_count = 0
-                valid_batch_size = 0
+                valid_batch_size  = 0
                 valid_source_data = []
                 valid_target_data = []
                 valid_cost_mean = 0.0
@@ -320,7 +373,7 @@ def train_model(feature_size,
 
                     valid_batch_size += 1
 
-                    if valid_batch_size<10:
+                    if valid_batch_size<128:
                         continue
                     else:
                         # source data
@@ -338,28 +391,15 @@ def train_model(feature_size,
                     generator_evaluator_input = [valid_source_data,
                                                  valid_target_data]
 
-                    evaluation_output = evaluation_function(*generator_evaluator_input)
-                    valid_output_data  = evaluation_output[0]
-                    generator_valid_cost = evaluation_output[1].mean()
+                    generator_evaluator_output = generator_evaluator(*generator_evaluator_input)
+                    generator_valid_cost  = generator_evaluator_output[0].mean()
 
                     valid_cost_mean += generator_valid_cost
                     valid_batch_count += 1
 
-                    valid_target_data = numpy.swapaxes(valid_target_data, axis1=0, axis2=1)
-                    valid_target_data = valid_target_data.reshape((valid_target_data.shape[0], -1))
-                    valid_target_data = valid_target_data*(2.**15)
-                    valid_target_data = valid_target_data.astype(numpy.int16)
-
-                    valid_output_data = numpy.swapaxes(valid_output_data, axis1=0, axis2=1)
-                    valid_output_data = valid_output_data.reshape((valid_target_data.shape[0], -1))
-                    valid_output_data = valid_output_data*(2.**15)
-                    valid_output_data = valid_output_data.astype(numpy.int16)
-
-                    save_wavfile(valid_target_data, model_name+'_original')
-                    save_wavfile(valid_output_data, model_name+'_reconstr')
-
-                    sampling_seed_data = valid_source_data
-                    break
+                    if valid_batch_count>100:
+                        sampling_seed_data = valid_source_data
+                        break
 
                 valid_cost_mean = valid_cost_mean/valid_batch_count
 
@@ -376,27 +416,24 @@ def train_model(feature_size,
                                     save_as=model_name+'_model_cost.png',
                                     legend_pos='upper left')
 
-            if train_batch_count%200==0:
+            if train_batch_count%100==0:
                 num_samples = 10
                 num_sec     = 10
                 sampling_length = num_sec*sampling_rate/feature_size
 
                 curr_input_data  = sampling_seed_data[0][:num_samples]
                 prev_hidden_data = np_rng.normal(size=(num_layers, num_samples, hidden_size)).astype(floatX)
-                prev_hidden_data = numpy.clip(prev_hidden_data, -1.0, 1.0)
-                prev_cell_data   = np_rng.normal(size=(num_layers, num_samples, hidden_size)).astype(floatX)
+                prev_hidden_data = numpy.tanh(prev_hidden_data)
                 output_data      = numpy.zeros(shape=(sampling_length, num_samples, feature_size))
                 for s in xrange(sampling_length):
 
 
                     generator_input = [curr_input_data,
-                                       prev_hidden_data,
-                                       prev_cell_data]
+                                       prev_hidden_data,]
 
-                    [curr_input_data, prev_hidden_data, prev_cell_data] = generation_function(*generator_input)
+                    [curr_input_data, prev_hidden_data] = generator_sampler(*generator_input)
 
                     output_data[s] = curr_input_data
-
                 sample_data = numpy.swapaxes(output_data, axis1=0, axis2=1)
                 sample_data = sample_data.reshape((num_samples, -1))
                 sample_data = sample_data*(2.**15)
@@ -405,36 +442,36 @@ def train_model(feature_size,
 
 if __name__=="__main__":
     feature_size  = 160
-    hidden_size   = 240
-    learning_rate = 1e-1
-    num_layers    = 2
-    init_window   = 100
+    hidden_size   = 160
+    learning_rate = 1e-2
+    num_layers    = 4
 
-    model_name = 'lstm_stack_layer' \
-                 + '_LAYER{}'.format(int(num_layers)) \
+    model_name = 'lstm_stack_model' \
                  + '_FEATURE{}'.format(int(feature_size)) \
                  + '_HIDDEN{}'.format(int(hidden_size)) \
+                 + '_LAYERS{}'.format(int(num_layers)) \
                  + '_LR{}'.format(int(-numpy.log10(learning_rate))) \
 
-    # set model
-    recurrent_model = set_recurrent_model(input_size=feature_size,
-                                          hidden_size=hidden_size,
-                                          num_layers=num_layers)
-
-    output_model    = set_output_model(num_layers=num_layers,
-                                       hidden_size=hidden_size,
-                                       input_size=feature_size)
+    # generator model
+    generator_rnn_model = set_generator_recurrent_model(input_size=feature_size,
+                                                        hidden_size=hidden_size,
+                                                        num_layers=num_layers)
+    generator_mean_model = set_generator_mean_model(hidden_size=hidden_size,
+                                                    output_size=feature_size,
+                                                    num_layers=num_layers)
+    generator_std_model  = set_generator_std_model(hidden_size=hidden_size,
+                                                   output_size=feature_size,
+                                                   num_layers=num_layers)
 
     # set optimizer
-    optimizer = AdaGrad(learning_rate=learning_rate).update_params
+    generator_optimizer = RmsProp(learning_rate=learning_rate).update_params
 
-    # train model
     train_model(feature_size=feature_size,
                 hidden_size=hidden_size,
                 num_layers=num_layers,
-                init_window_size=init_window,
-                recurrent_model=recurrent_model,
-                output_model=output_model,
-                model_optimizer=optimizer,
+                generator_rnn_model=generator_rnn_model,
+                generator_mean_model=generator_mean_model,
+                generator_std_model=generator_std_model,
+                generator_optimizer=generator_optimizer,
                 num_epochs=10,
                 model_name=model_name)

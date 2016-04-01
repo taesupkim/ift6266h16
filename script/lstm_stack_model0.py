@@ -438,7 +438,7 @@ def train_model(feature_size,
 if __name__=="__main__":
     feature_size  = 160
     hidden_size   = 320
-    learning_rate = 1e-4
+    learning_rate = 1e-5
     num_layers    = 2
 
     model_name = 'lstm_stack_model' \

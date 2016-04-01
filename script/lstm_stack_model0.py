@@ -59,9 +59,13 @@ def set_recurrent_model(input_size, hidden_size, num_layers):
 def set_output_model(num_layers, hidden_size, input_size):
     layers = []
     layers.append(LinearLayer(input_dim=num_layers*hidden_size,
-                              output_dim=input_size,
+                              output_dim=num_layers,
                               name='output_layer0'))
-    layers.append(Tanh(name='output_squeeze_layer'))
+    layers.append(Tanh(name='output_squeeze_layer0'))
+    layers.append(LinearLayer(input_dim=num_layers,
+                              output_dim=input_size,
+                              name='output_layer1'))
+    layers.append(Tanh(name='output_squeeze_layer1'))
     return layers
 
 def set_update_function(recurrent_model,
@@ -88,7 +92,6 @@ def set_update_function(recurrent_model,
 
     # get cost (sum over feature, and time)
     sample_cost = tensor.sqr(output_data-target_data)
-    sample_cost = sample_cost.sum(axis=(0, 2))
 
     # get model updates
     model_cost         = sample_cost.mean()
@@ -140,7 +143,6 @@ def set_evaluation_function(recurrent_model,
 
     # get cost (sum over feature, and time)
     sample_cost = tensor.sqr(output_data-target_data)
-    sample_cost = sample_cost.sum(axis=(0, 2))
 
     evaluation_function_inputs  = [source_data,
                                    target_data,]
@@ -404,7 +406,7 @@ def train_model(feature_size,
 if __name__=="__main__":
     feature_size  = 160
     hidden_size   = 240
-    learning_rate = 1e-2
+    learning_rate = 1e-1
     num_layers    = 2
     init_window   = 100
 

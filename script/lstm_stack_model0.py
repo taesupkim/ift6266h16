@@ -216,16 +216,11 @@ def set_generator_sampling_function(generator_rnn_model,
     generator_input_data_list = [cur_input_data,
                                  prev_hidden_data]
     cur_hidden_data = generator_rnn_model[0].forward(generator_input_data_list, is_training=False)[0]
-    cur_hidden_data = cur_hidden_data.dimshuffle(1, 0, 2).flatten(2)
-
 
     # get generator output data
-    output_mean_data = get_tensor_output(input=cur_hidden_data,
+    output_mean_data = get_tensor_output(input=cur_hidden_data.dimshuffle(1, 0, 2).flatten(2),
                                          layers=generator_mean_model,
                                          is_training=False)
-    output_std_data = get_tensor_output(input=cur_hidden_data,
-                                        layers=generator_std_model,
-                                        is_training=False)
     output_data = output_mean_data
 
     # input data

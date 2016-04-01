@@ -226,7 +226,7 @@ def set_generator_sampling_function(generator_rnn_model,
     output_std_data = get_tensor_output(input=cur_hidden_data,
                                         layers=generator_std_model,
                                         is_training=False)
-    output_data = output_mean_data + output_std_data*theano_rng.normal(size=output_std_data.shape, dtype=floatX)
+    output_data = output_mean_data
 
     # input data
     generation_sampling_inputs  = [cur_input_data,

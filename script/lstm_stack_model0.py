@@ -124,7 +124,7 @@ def set_generator_update_function(generator_rnn_model,
 
     # get generator cost (time_length x num_samples x hidden_size)
     generator_cost  = 0.5*tensor.inv(2.0*tensor.sqr(output_std_data))*tensor.sqr(output_mean_data-target_data)
-    generator_cost += 0.5*tensor.log(2.0*tensor.sqr(output_std_data)*numpy.pi)
+    generator_cost += tensor.log(output_std_data) + 0.5*tensor.log(2.0*numpy.pi)
 
     # set generator update
     generator_updates_cost = tensor.sum(generator_cost, axis=2).mean()
@@ -183,7 +183,7 @@ def set_generator_evaluation_function(generator_rnn_model,
 
     # get generator cost (time_length x num_samples x hidden_size)
     generator_cost  = 0.5*tensor.inv(2.0*tensor.sqr(output_std_data))*tensor.sqr(output_mean_data-target_data)
-    generator_cost += 0.5*tensor.log(2.0*tensor.sqr(output_std_data)*numpy.pi)
+    generator_cost += tensor.log(output_std_data) + 0.5*tensor.log(2.0*numpy.pi)
 
     # set generator evaluate inputs
     generator_evaluate_inputs  = [source_data,
@@ -438,7 +438,7 @@ def train_model(feature_size,
 if __name__=="__main__":
     feature_size  = 160
     hidden_size   = 160
-    learning_rate = 1e-2
+    learning_rate = 1e-4
     num_layers    = 4
 
     model_name = 'lstm_stack_model' \

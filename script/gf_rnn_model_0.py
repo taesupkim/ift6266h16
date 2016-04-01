@@ -122,8 +122,8 @@ def set_generator_update_function(generator_rnn_model,
                                         is_training=True)
 
     # get generator cost (time_length x num_samples x hidden_size)
-    generator_cost  = -0.5*tensor.inv(2.0*tensor.sqr(output_std_data))*tensor.sqr(output_mean_data-target_data)
-    generator_cost += -0.5*tensor.log(2.0*tensor.sqr(output_std_data)*numpy.pi)
+    generator_cost  = 0.5*tensor.inv(2.0*tensor.sqr(output_std_data))*tensor.sqr(output_mean_data-target_data)
+    generator_cost += 0.5*tensor.log(2.0*tensor.sqr(output_std_data)*numpy.pi)
 
     # set generator update
     generator_updates_cost = tensor.sum(generator_cost, axis=2).mean()
@@ -181,8 +181,8 @@ def set_generator_evaluation_function(generator_rnn_model,
                                         is_training=True)
 
     # get generator cost (time_length x num_samples x hidden_size)
-    generator_cost  = -0.5*tensor.inv(2.0*tensor.sqr(output_std_data))*tensor.sqr(output_mean_data-target_data)
-    generator_cost += -0.5*tensor.log(2.0*tensor.sqr(output_std_data)*numpy.pi)
+    generator_cost  = 0.5*tensor.inv(2.0*tensor.sqr(output_std_data))*tensor.sqr(output_mean_data-target_data)
+    generator_cost += 0.5*tensor.log(2.0*tensor.sqr(output_std_data)*numpy.pi)
 
     # set generator evaluate inputs
     generator_evaluate_inputs  = [source_data,
@@ -249,7 +249,7 @@ def train_model(feature_size,
                                                       generator_mean_model=generator_mean_model,
                                                       generator_std_model=generator_std_model,
                                                       generator_optimizer=generator_optimizer,
-                                                      grad_clipping=15.0)
+                                                      grad_clipping=0.0)
 
     # generator evaluator
     print 'DEBUGGING GENERATOR EVALUATION FUNCTION '

@@ -5,7 +5,7 @@ from theano import tensor
 from data.window import Window
 from util.utils import save_wavfile
 from layer.activations import Tanh, Logistic, Relu
-from layer.layers import LinearLayer, LstmAllLoopGaussianLayer, LstmStackLayer
+from layer.layers import LinearLayer, LstmStackLayer, LstmLoopStackLayer
 from layer.layer_utils import get_tensor_output, get_model_updates, get_lstm_outputs, get_model_gradients
 from optimizer.rmsprop import RmsProp
 from numpy.random import RandomState
@@ -34,11 +34,11 @@ def set_generator_recurrent_model(input_size,
                                   hidden_size,
                                   num_layers):
     layers = []
-    layers.append(LstmAllLoopGaussianLayer(input_dim=input_size,
-                                           hidden_dim=hidden_size,
-                                           num_rnn_layers=num_layers,
-                                           num_lin_layers=num_layers-1,
-                                           name='generator_rnn_model'))
+    layers.append(LstmLoopStackLayer(input_dim=input_size,
+                                     hidden_dim=hidden_size,
+                                     num_rnn_layers=num_layers,
+                                     num_lin_layers=num_layers-1,
+                                     name='generator_rnn_model'))
     return layers
 
 def set_discriminator_recurrent_model(input_size,
@@ -95,7 +95,6 @@ def set_generator_update_function(generator_rnn_model,
     # get generator output data
     output_data_set = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)
     sample_data = output_data_set[0]
-    update_data = output_data_set[-1]
 
     # set discriminator input data list
     discriminator_sample_data_list = [sample_data,]
@@ -107,8 +106,8 @@ def set_generator_update_function(generator_rnn_model,
 
     # get discriminator output data
     discriminator_sample_score_data = get_tensor_output(input=discriminator_sample_hidden_data,
-                                         layers=discriminator_output_model,
-                                         is_training=True)
+                                                        layers=discriminator_output_model,
+                                                        is_training=True)
 
     # get cost based on discriminator (binary cross-entropy over all data)
     # sum over generator cost over time_length and output_dims, then mean over samples
@@ -135,12 +134,14 @@ def set_generator_update_function(generator_rnn_model,
                                  sampling_length]
 
     # set generator update outputs
-    generator_updates_outputs = [discriminator_sample_score_data, generator_cost, gradient_norm]
+    generator_updates_outputs = [discriminator_sample_score_data,
+                                 generator_cost,
+                                 gradient_norm]
 
     # set generator update function
     generator_updates_function = theano.function(inputs=generator_updates_inputs,
                                                  outputs=generator_updates_outputs,
-                                                 updates=merge_dicts([generator_updates_dict, update_data]),
+                                                 updates=generator_updates_dict,
                                                  on_unused_input='ignore')
 
     return generator_updates_function
@@ -179,7 +180,6 @@ def set_discriminator_update_function(generator_rnn_model,
     # get generator sampled output data
     output_data_set = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)
     sample_data = output_data_set[0]
-    update_data = output_data_set[-1]
 
     # set discriminator real input data list
     discriminator_input_data_list = [input_data,]
@@ -239,7 +239,7 @@ def set_discriminator_update_function(generator_rnn_model,
     # set discriminator update function
     discriminator_updates_function = theano.function(inputs=discriminator_updates_inputs,
                                                      outputs=discriminator_updates_outputs,
-                                                     updates=merge_dicts([discriminator_updates_dict, update_data]),
+                                                     updates=discriminator_updates_dict,
                                                      on_unused_input='ignore')
 
     return discriminator_updates_function
@@ -270,7 +270,6 @@ def set_sample_generation_function(generator_rnn_model):
     # get generator output data
     output_data_set = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)
     sample_data = output_data_set[0]
-    update_data = output_data_set[-1]
 
     # input data
     generation_function_inputs  = [init_input_data,
@@ -281,7 +280,6 @@ def set_sample_generation_function(generator_rnn_model):
 
     generation_function = theano.function(inputs=generation_function_inputs,
                                           outputs=generation_function_outputs,
-                                          updates=update_data,
                                           on_unused_input='ignore')
     return generation_function
 
@@ -302,7 +300,7 @@ def train_model(feature_size,
                                                       discriminator_rnn_model=discriminator_rnn_model,
                                                       discriminator_output_model=discriminator_output_model,
                                                       generator_optimizer=generator_optimizer,
-                                                      grad_clipping=1.0)
+                                                      grad_clipping=0.0)
 
     # discriminator updater
     print 'DEBUGGING DISCRIMINATOR UPDATE FUNCTION '
@@ -310,7 +308,7 @@ def train_model(feature_size,
                                                               discriminator_rnn_model=discriminator_rnn_model,
                                                               discriminator_output_model=discriminator_output_model,
                                                               discriminator_optimizer=discriminator_optimizer,
-                                                              grad_clipping=1.0)
+                                                              grad_clipping=0.0)
 
     # sample generator
     print 'DEBUGGING SAMPLE GENERATOR FUNCTION '
@@ -362,10 +360,8 @@ def train_model(feature_size,
             # set generator initial values
             init_input_data  = source_data[0]
             init_hidden_data = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
-            init_hidden_data = numpy.clip(init_hidden_data, -1., 1.)
+            init_hidden_data = numpy.tanh(init_hidden_data)
             init_cell_data   = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
-            # init_hidden_data = numpy.zeros(shape=(num_layers, source_data.shape[1], hidden_size), dtype=floatX)
-            # init_cell_data   = numpy.zeros(shape=(num_layers, source_data.shape[1], hidden_size), dtype=floatX)
 
             # update generator
             generator_updater_input = [init_input_data,
@@ -380,10 +376,8 @@ def train_model(feature_size,
             # update discriminator
             init_input_data  = source_data[0]
             init_hidden_data = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
-            init_hidden_data = numpy.clip(init_hidden_data, -1., 1.)
+            init_hidden_data = numpy.tanh(init_hidden_data)
             init_cell_data   = np_rng.normal(size=(num_layers, source_data.shape[1], hidden_size)).astype(floatX)
-            # init_hidden_data = numpy.zeros(shape=(num_layers, source_data.shape[1], hidden_size), dtype=floatX)
-            # init_cell_data   = numpy.zeros(shape=(num_layers, source_data.shape[1], hidden_size), dtype=floatX)
 
             discriminator_updater_input = [source_data,
                                            init_input_data,
@@ -428,10 +422,8 @@ def train_model(feature_size,
                 # set generator initial values
                 init_input_data  = source_data[1][:num_samples].reshape(num_samples, feature_size)
                 init_hidden_data = np_rng.normal(size=(num_layers, num_samples, hidden_size)).astype(floatX)
-                init_hidden_data = numpy.clip(init_hidden_data, -1., 1.)
+                init_hidden_data = numpy.tanh(init_hidden_data)
                 init_cell_data   = np_rng.normal(size=(num_layers, num_samples, hidden_size)).astype(floatX)
-                # init_hidden_data = numpy.zeros(shape=(num_layers, num_samples, hidden_size), dtype=floatX)
-                # init_cell_data   = numpy.zeros(shape=(num_layers, num_samples, hidden_size), dtype=floatX)
 
                 generator_input = [init_input_data,
                                    init_hidden_data,

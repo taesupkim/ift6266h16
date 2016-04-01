@@ -205,7 +205,7 @@ def train_model(feature_size,
     update_function = set_update_function(recurrent_model=recurrent_model,
                                           output_model=output_model,
                                           optimizer=model_optimizer,
-                                          grad_clip=4.0)
+                                          grad_clip=2.0)
     print '%.2f SEC '%(time()-t)
 
     print 'COMPILING GENERATOR EVALUATION FUNCTION '

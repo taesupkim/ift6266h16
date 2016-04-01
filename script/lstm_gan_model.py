@@ -462,7 +462,7 @@ if __name__=="__main__":
 
     # set optimizer
     generator_optimizer     = RmsProp(learning_rate=0.01).update_params
-    discriminator_optimizer = RmsProp(learning_rate=0.00001).update_params
+    discriminator_optimizer = RmsProp(learning_rate=0.001).update_params
 
 
     train_model(feature_size=feature_size,

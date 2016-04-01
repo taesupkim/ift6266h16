@@ -127,7 +127,7 @@ def set_generator_update_function(generator_rnn_model,
     generator_cost += tensor.log(output_std_data) + 0.5*tensor.log(2.0*numpy.pi)
 
     # set generator update
-    generator_updates_cost = tensor.sum(generator_cost, axis=2).mean()
+    generator_updates_cost = tensor.sum(generator_cost, axis=(0,2)).mean()
     generator_updates_dict = get_model_updates(layers=generator_rnn_model+generator_mean_model+generator_std_model,
                                                cost=generator_updates_cost,
                                                optimizer=generator_optimizer,
@@ -439,7 +439,7 @@ if __name__=="__main__":
     feature_size  = 160
     hidden_size   = 160
     learning_rate = 1e-4
-    num_layers    = 4
+    num_layers    = 2
 
     model_name = 'lstm_stack_model' \
                  + '_FEATURE{}'.format(int(feature_size)) \

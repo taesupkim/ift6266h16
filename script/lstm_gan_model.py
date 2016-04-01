@@ -115,7 +115,7 @@ def set_generator_update_function(generator_rnn_model,
                                                      target=tensor.ones_like(discriminator_sample_score_data))
 
     # set generator update
-    generator_updates_cost = generator_cost.mean()
+    generator_updates_cost = generator_cost.sum(axis=0).mean()
     generator_updates_dict = get_model_updates(layers=generator_rnn_model,
                                                cost=generator_updates_cost,
                                                optimizer=generator_optimizer,
@@ -212,7 +212,7 @@ def set_discriminator_update_function(generator_rnn_model,
                                                           target=tensor.zeros_like(discriminator_sample_score_data)))
 
     # set discriminator update
-    discriminator_updates_cost = discriminator_cost.mean()
+    discriminator_updates_cost = discriminator_cost.sum(axis=0).mean()
     discriminator_updates_dict = get_model_updates(layers=discriminator_rnn_model+discriminator_output_model,
                                                    cost=discriminator_updates_cost,
                                                    optimizer=discriminator_optimizer,
@@ -462,8 +462,8 @@ if __name__=="__main__":
     discriminator_output_model = set_discriminator_output_model(input_size=hidden_size*num_layers)
 
     # set optimizer
-    generator_optimizer     = RmsProp(learning_rate=0.01).update_params
-    discriminator_optimizer = RmsProp(learning_rate=0.001).update_params
+    generator_optimizer     = RmsProp(learning_rate=0.1).update_params
+    discriminator_optimizer = RmsProp(learning_rate=0.01).update_params
 
 
     train_model(feature_size=feature_size,

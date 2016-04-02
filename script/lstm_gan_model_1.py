@@ -356,7 +356,7 @@ def train_model(feature_size,
         train_target_data = []
         for batch_idx, batch_data in enumerate(train_data_iterator):
             # skip the beginning part
-            if batch_idx<1000:
+            if batch_idx<10000:
                 continue
 
             # init train batch data

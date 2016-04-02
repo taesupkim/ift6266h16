@@ -154,7 +154,7 @@ def set_gan_update_function(generator_model,
         discriminator_gradient_norm += tensor.sum(grad**2)
     discriminator_gradient_norm  = tensor.sqrt(discriminator_gradient_norm)
 
-    square_error = tensor.sqr(target_sequence-output_sequence).mean(axis=2)
+    square_error = tensor.sqr(target_sequence-output_sequence).sum(axis=2)
 
     # set gan update inputs
     gan_updates_inputs  = [input_sequence,
@@ -194,7 +194,7 @@ def set_teacher_force_update_function(generator_model,
     output_sequence = output_data_set[0]
 
     # get square error
-    square_error = tensor.sqr(target_sequence-output_sequence)
+    square_error = tensor.sqr(target_sequence-output_sequence).sum(axis=2)
 
     # set generator update
     tf_updates_cost = square_error.mean()

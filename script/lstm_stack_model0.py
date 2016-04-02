@@ -342,7 +342,7 @@ def train_model(feature_size,
 
 
             sampling_seed_data = []
-            if train_batch_count%10==0:
+            if train_batch_count%100==0:
                 # set valid data stream with proper length (window size)
                 valid_window_size = window_size
                 valid_data_stream = set_valid_datastream(feature_size=feature_size,

@@ -66,7 +66,7 @@ def set_generator_mean_model(hidden_size,
                              output_size,
                              num_layers):
     layers = []
-    layers.append(LinearLayer(input_dim=hidden_size,
+    layers.append(LinearLayer(input_dim=hidden_size*num_layers,
                               # output_dim=hidden_size*num_layers/2,
                               # name='generator_mean_linear_layer0'))
     # layers.append(Relu(name='generator_mean_relu_layer0'))
@@ -82,7 +82,7 @@ def set_generator_std_model(hidden_size,
                             num_layers):
     layers = []
 
-    layers.append(LinearLayer(input_dim=hidden_size,
+    layers.append(LinearLayer(input_dim=hidden_size*num_layers,
                               # output_dim=hidden_size*num_layers/2,
                               # name='generator_var_linear_layer0'))
     # layers.append(Relu(name='generator_var_relu_layer0'))
@@ -113,17 +113,16 @@ def set_generator_update_function(generator_rnn_model,
 
     # get generator hidden data
     hidden_data = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)[0]
-    hidden_data = hidden_data[:][-1]
     hidden_data = hidden_data.dimshuffle(0, 2, 1, 3).flatten(3)
 
     # get generator output data
     output_mean_data = get_tensor_output(input=hidden_data,
                                          layers=generator_mean_model,
                                          is_training=True)
-    output_std_data = get_tensor_output(input=hidden_data,
-                                        layers=generator_std_model,
-                                        is_training=True)
-
+    # output_std_data = get_tensor_output(input=hidden_data,
+    #                                     layers=generator_std_model,
+    #                                     is_training=True)
+    output_std_data = 0.22
     # get generator cost (time_length x num_samples x hidden_size)
     generator_cost  = 0.5*tensor.inv(2.0*tensor.sqr(output_std_data))*tensor.sqr(output_mean_data-target_data)
     generator_cost += tensor.log(output_std_data) + 0.5*tensor.log(2.0*numpy.pi)
@@ -131,12 +130,12 @@ def set_generator_update_function(generator_rnn_model,
 
     # set generator update
     generator_updates_cost = generator_cost.mean()
-    generator_updates_dict = get_model_updates(layers=generator_rnn_model+generator_mean_model+generator_std_model,
+    generator_updates_dict = get_model_updates(layers=generator_rnn_model+generator_mean_model,
                                                cost=generator_updates_cost,
                                                optimizer=generator_optimizer,
                                                use_grad_clip=grad_clipping)
 
-    gradient_dict  = get_model_gradients(generator_rnn_model+generator_mean_model+generator_std_model, generator_updates_cost)
+    gradient_dict  = get_model_gradients(generator_rnn_model+generator_mean_model, generator_updates_cost)
     gradient_norm  = 0.
     for grad in gradient_dict:
         gradient_norm += tensor.sum(grad**2)
@@ -174,21 +173,21 @@ def set_generator_evaluation_function(generator_rnn_model,
 
     # get generator hidden data
     hidden_data = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)[0]
-    hidden_data = hidden_data[:][-1]
     hidden_data = hidden_data.dimshuffle(0, 2, 1, 3).flatten(3)
 
     # get generator output data
     output_mean_data = get_tensor_output(input=hidden_data,
                                          layers=generator_mean_model,
                                          is_training=True)
-    output_std_data = get_tensor_output(input=hidden_data,
-                                        layers=generator_std_model,
-                                        is_training=True)
-
+    # output_std_data = get_tensor_output(input=hidden_data,
+    #                                     layers=generator_std_model,
+    #                                     is_training=True)
+    output_std_data = 0.22
     # get generator cost (time_length x num_samples x hidden_size)
     generator_cost  = 0.5*tensor.inv(2.0*tensor.sqr(output_std_data))*tensor.sqr(output_mean_data-target_data)
     generator_cost += tensor.log(output_std_data) + 0.5*tensor.log(2.0*numpy.pi)
     generator_cost  = tensor.sum(generator_cost, axis=2)
+
     # set generator evaluate inputs
     generator_evaluate_inputs  = [source_data,
                                   target_data,]
@@ -220,7 +219,6 @@ def set_generator_sampling_function(generator_rnn_model,
     generator_input_data_list = [cur_input_data,
                                  prev_hidden_data]
     cur_hidden_data = generator_rnn_model[0].forward(generator_input_data_list, is_training=False)[0]
-    cur_hidden_data = cur_hidden_data[-1]
 
     # get generator output data
     output_mean_data = get_tensor_output(input=cur_hidden_data.dimshuffle(1, 0, 2).flatten(2),

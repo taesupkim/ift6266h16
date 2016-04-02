@@ -272,7 +272,7 @@ def train_model(feature_size,
 
     generator_grad_norm_mean = 0.0
 
-    init_window_size = 10
+    init_window_size = 100
     for e in xrange(num_epochs):
         window_size = init_window_size + 5*e
 
@@ -334,7 +334,7 @@ def train_model(feature_size,
 
 
             sampling_seed_data = []
-            if train_batch_count%10==0:
+            if train_batch_count%100==0:
                 # set valid data stream with proper length (window size)
                 valid_window_size = 100
                 valid_data_stream = set_valid_datastream(feature_size=feature_size,

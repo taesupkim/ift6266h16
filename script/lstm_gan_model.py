@@ -329,6 +329,7 @@ def train_model(feature_size,
 
     print 'START TRAINING'
     # for each epoch
+    tf_generator_train_grad_list = []
     tf_generator_train_cost_list = []
     tf_generator_valid_cost_list = []
 
@@ -413,6 +414,7 @@ def train_model(feature_size,
             train_batch_count += 1
 
             tf_generator_train_cost_list.append(tf_square_error)
+            tf_generator_train_grad_list.append(tf_update_output[1])
 
             if train_batch_count%100==0:
                 print '=============sample length {}============================='.format(window_size)
@@ -430,6 +432,8 @@ def train_model(feature_size,
                 stop_flag = True
                 numpy.save(file=model_name+'train_cost',
                            arr=numpy.asarray(tf_generator_train_cost_list))
+                numpy.save(file=model_name+'train_grad',
+                           arr=numpy.asarray(tf_generator_train_grad_list))
                 plot_learning_curve(cost_values=[tf_generator_train_cost_list, ],
                                     cost_names=['Train Cost', ],
                                     save_as=model_name+'_model_cost.png',

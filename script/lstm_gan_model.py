@@ -361,7 +361,7 @@ def train_model(feature_size,
         train_target_data = []
         for batch_idx, batch_data in enumerate(train_data_iterator):
             # skip the beginning part
-            if batch_idx<10:
+            if batch_idx<100:
                 continue
 
             # init train batch data
@@ -393,8 +393,8 @@ def train_model(feature_size,
                 train_batch_size = 0
 
             # normalize
-            train_source_data = (train_source_data/(2.**15)).astype(floatX)
-            train_target_data = (train_target_data/(2.**15)).astype(floatX)
+            train_source_data = (train_source_data/(1.15*2.**13)).astype(floatX)
+            train_target_data = (train_target_data/(1.15*2.**13)).astype(floatX)
 
             # teacher force update
             tf_update_output = tf_generator_updater(train_source_data, train_target_data)
@@ -467,8 +467,8 @@ def train_model(feature_size,
                         valid_batch_size = 0
 
                     # normalize
-                    valid_source_data = (valid_source_data/(2.**15)).astype(floatX)
-                    valid_target_data = (valid_target_data/(2.**15)).astype(floatX)
+                    valid_source_data = (valid_source_data/(1.15*2.**13)).astype(floatX)
+                    valid_target_data = (valid_target_data/(1.15*2.**13)).astype(floatX)
 
                     generator_evaluator_output = evaluator(valid_source_data, valid_target_data)
                     generator_valid_cost = generator_evaluator_output[0].mean()
@@ -512,7 +512,7 @@ def train_model(feature_size,
             #         output_data[s] = curr_input_data
             #     sample_data = numpy.swapaxes(output_data, axis1=0, axis2=1)
             #     sample_data = sample_data.reshape((num_samples, -1))
-            #     sample_data = sample_data*(2.**15)
+            #     sample_data = sample_data*(1.15*2.**13)
             #     sample_data = sample_data.astype(numpy.int16)
             #     save_wavfile(sample_data, model_name+'_sample')
 

@@ -533,7 +533,7 @@ if __name__=="__main__":
                                           num_layers=num_layers)
 
     # discriminator model
-    discriminator_model = set_discriminator_model(total_hidden_size=hidden_size*num_layers)
+    discriminator_model = set_discriminator_model(total_hidden_size=hidden_size*num_layers*2)
 
     # set optimizer
     tf_generator_optimizer      = RmsProp(learning_rate=0.001).update_params

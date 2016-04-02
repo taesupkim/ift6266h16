@@ -124,8 +124,9 @@ def set_generator_update_function(generator_rnn_model,
     # get generator cost (time_length x num_samples x hidden_size)
     generator_cost  = 0.5*tensor.inv(2.0*tensor.sqr(output_std_data))*tensor.sqr(output_mean_data-target_data)
     generator_cost += tensor.log(output_std_data) + 0.5*tensor.log(2.0*numpy.pi)
+    generator_cost  = tensor.sum(generator_cost, axis=2)
     # set generator update
-    generator_updates_cost = tensor.sum(generator_cost, axis=(0,2)).mean()
+    generator_updates_cost = generator_cost.mean()
     generator_updates_dict = get_model_updates(layers=generator_rnn_model+generator_mean_model+generator_std_model,
                                                cost=generator_updates_cost,
                                                optimizer=generator_optimizer,
@@ -182,6 +183,7 @@ def set_generator_evaluation_function(generator_rnn_model,
     # get generator cost (time_length x num_samples x hidden_size)
     generator_cost  = 0.5*tensor.inv(2.0*tensor.sqr(output_std_data))*tensor.sqr(output_mean_data-target_data)
     generator_cost += tensor.log(output_std_data) + 0.5*tensor.log(2.0*numpy.pi)
+    generator_cost  = tensor.sum(generator_cost, axis=2)
 
     # set generator evaluate inputs
     generator_evaluate_inputs  = [source_data,

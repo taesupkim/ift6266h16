@@ -272,10 +272,9 @@ def train_model(feature_size,
 
     generator_grad_norm_mean = 0.0
 
-    init_window_size = 2
+    init_window_size = 100
     for e in xrange(num_epochs):
         window_size = init_window_size + 5*e
-
         # set train data stream with proper length (window size)
         train_data_stream = set_train_datastream(feature_size=feature_size,
                                                  window_size=window_size)
@@ -433,8 +432,8 @@ def train_model(feature_size,
                 save_wavfile(sample_data, model_name+'_sample')
 
 if __name__=="__main__":
-    feature_size  = 16
-    hidden_size   = 48
+    feature_size  = 160
+    hidden_size   = 100
     learning_rate = 1e-3
     num_layers    = 2
 

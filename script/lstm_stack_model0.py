@@ -341,7 +341,7 @@ def train_model(feature_size,
             sampling_seed_data = []
             if train_batch_count%10==0:
                 # set valid data stream with proper length (window size)
-                valid_window_size = 100
+                valid_window_size = window_size
                 valid_data_stream = set_valid_datastream(feature_size=feature_size,
                                                          window_size=valid_window_size)
                 # get train data iterator
@@ -440,7 +440,7 @@ def train_model(feature_size,
 if __name__=="__main__":
     feature_size  = 160
     hidden_size   = 320
-    learning_rate = 1e-5
+    learning_rate = 1e-3
     num_layers    = 2
 
     model_name = 'lstm_stack_model' \

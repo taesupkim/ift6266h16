@@ -435,7 +435,7 @@ def train_model(feature_size,
 if __name__=="__main__":
     feature_size  = 16
     hidden_size   = 48
-    learning_rate = 1e-5
+    learning_rate = 1e-3
     num_layers    = 2
 
     model_name = 'gf_rnn_normal' \

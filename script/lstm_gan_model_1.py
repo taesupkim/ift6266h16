@@ -339,6 +339,8 @@ def train_model(feature_size,
     gan_generator_grad_norm_mean = 0.0
     gan_discriminator_grad_norm_mean = 0.0
 
+    stop_flag = False
+
     init_window_size = 100
     for e in xrange(num_epochs):
         window_size = init_window_size + 5*e
@@ -354,6 +356,8 @@ def train_model(feature_size,
         train_batch_size = 0
         train_source_data = []
         train_target_data = []
+        if stop_flag is True:
+            break
         for batch_idx, batch_data in enumerate(train_data_iterator):
             # skip the beginning part
             if batch_idx<10000:
@@ -421,10 +425,20 @@ def train_model(feature_size,
                 # print 'epoch {}, batch_cnt {} => GAN discriminator grad norm {}'.format(e, train_batch_count, gan_discriminator_grad_norm_mean/train_batch_count)
                 print 'epoch {}, batch_cnt {} => TF generator train mse cost {}'.format(e, train_batch_count, tf_square_error)
                 # print 'epoch {}, batch_cnt {} => GAN generator train mse cost{}'.format(e, train_batch_count, gan_square_error)
+
+            if train_batch_count==10000:
+                stop_flag = True
+                numpy.save(file=model_name+'train_cost',
+                           arr=numpy.asarray(tf_generator_train_cost_list))
                 plot_learning_curve(cost_values=[tf_generator_train_cost_list, ],
                                     cost_names=['Train Cost', ],
                                     save_as=model_name+'_model_cost.png',
                                     legend_pos='upper left')
+
+            if stop_flag is True:
+                break
+
+
             sampling_seed_data = []
             # if train_batch_count%10==0:
             if 0:
@@ -523,30 +537,31 @@ if __name__=="__main__":
     feature_size  = 160
     hidden_size   = 100
 
-    model_name = 'lstm_gan' \
-                 + '_FEATURE{}'.format(int(feature_size)) \
-                 + '_HIDDEN{}'.format(int(hidden_size)) \
-                 + '_WINDOW100_LR1E_2'
+    lr_list = [0.01, 0.001, 0.0001]
+    for lr in lr_list:
+        model_name = 'lstm_gan' \
+                     + '_FEATURE{}'.format(int(feature_size)) \
+                     + '_HIDDEN{}'.format(int(hidden_size)) \
+                     + '_WINDOW100_LR{}'.format(lr)
+        # generator model
+        generator_model = set_generator_model(input_size=feature_size,
+                                              hidden_size=hidden_size)
 
-    # generator model
-    generator_model = set_generator_model(input_size=feature_size,
-                                          hidden_size=hidden_size)
+        # discriminator model
+        discriminator_model = set_discriminator_model(total_hidden_size=hidden_size*2)
 
-    # discriminator model
-    discriminator_model = set_discriminator_model(total_hidden_size=hidden_size*2)
-
-    # set optimizer
-    tf_generator_optimizer      = RmsProp(learning_rate=0.01).update_params
-    gan_generator_optimizer     = RmsProp(learning_rate=0.000).update_params
-    gan_discriminator_optimizer = RmsProp(learning_rate=0.000).update_params
+        # set optimizer
+        tf_generator_optimizer      = RmsProp(learning_rate=lr).update_params
+        gan_generator_optimizer     = RmsProp(learning_rate=0.000).update_params
+        gan_discriminator_optimizer = RmsProp(learning_rate=0.000).update_params
 
 
-    train_model(feature_size=feature_size,
-                hidden_size=hidden_size,
-                generator_model=generator_model,
-                generator_gan_optimizer=gan_generator_optimizer,
-                generator_tf_optimizer=tf_generator_optimizer,
-                discriminator_model=discriminator_model,
-                discriminator_optimizer=gan_discriminator_optimizer,
-                num_epochs=10,
-                model_name=model_name)
+        train_model(feature_size=feature_size,
+                    hidden_size=hidden_size,
+                    generator_model=generator_model,
+                    generator_gan_optimizer=gan_generator_optimizer,
+                    generator_tf_optimizer=tf_generator_optimizer,
+                    discriminator_model=discriminator_model,
+                    discriminator_optimizer=gan_discriminator_optimizer,
+                    num_epochs=10,
+                    model_name=model_name)

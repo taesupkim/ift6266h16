@@ -272,7 +272,7 @@ def train_model(feature_size,
 
     generator_grad_norm_mean = 0.0
 
-    init_window_size = 100
+    init_window_size = 10
     for e in xrange(num_epochs):
         window_size = init_window_size + 5*e
 

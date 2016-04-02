@@ -5,7 +5,7 @@ from theano import tensor
 from data.window import Window
 from util.utils import save_wavfile
 from layer.activations import Tanh, Logistic, Relu
-from layer.layers import LinearLayer, LstmStackLayer, LstmGanForceLayer
+from layer.layers import LinearLayer, LstmStackLayer, SingleLstmGanForceLayer
 from layer.layer_utils import get_tensor_output, get_model_updates, get_lstm_outputs, get_model_gradients
 from optimizer.rmsprop import RmsProp
 from numpy.random import RandomState
@@ -51,14 +51,11 @@ def set_valid_datastream(feature_size=16000,
     return data_stream
 
 def set_generator_model(input_size,
-                        hidden_size,
-                        num_layers):
+                        hidden_size):
     layers = []
-    layers.append(LstmGanForceLayer(input_dim=input_size,
-                                     hidden_dim=hidden_size,
-                                     num_rnn_layers=num_layers,
-                                     num_lin_layers=num_layers,
-                                     name='generator_rnn_model'))
+    layers.append(SingleLstmGanForceLayer(input_dim=input_size,
+                                          hidden_dim=hidden_size,
+                                          name='generator_model'))
     return layers
 
 def set_discriminator_model(total_hidden_size):
@@ -96,10 +93,10 @@ def set_gan_update_function(generator_model,
     # get generator output data
     output_data_set = generator_model[0].forward(generator_input_data_list, is_training=True)
     output_sequence = output_data_set[0]
-    data_hidden     = output_data_set[1].dimshuffle(0, 2, 1, 3).flatten(3)
-    data_cell       = output_data_set[2].dimshuffle(0, 2, 1, 3).flatten(3)
-    model_hidden    = output_data_set[3].dimshuffle(0, 2, 1, 3).flatten(3)
-    model_cell      = output_data_set[4].dimshuffle(0, 2, 1, 3).flatten(3)
+    data_hidden     = output_data_set[1]
+    data_cell       = output_data_set[2]
+    model_hidden    = output_data_set[3]
+    model_cell      = output_data_set[4]
 
     condition_hidden = data_hidden[:-1]
     condition_cell   = data_cell[:-1]
@@ -299,7 +296,6 @@ def set_sample_function(generator_model):
 
 def train_model(feature_size,
                 hidden_size,
-                num_layers,
                 generator_model,
                 generator_gan_optimizer,
                 generator_tf_optimizer,
@@ -520,7 +516,6 @@ if __name__=="__main__":
     feature_size  = 16
     hidden_size   = 128
     learning_rate = 1e-4
-    num_layers    = 2
 
     model_name = 'lstm_gan' \
                  + '_FEATURE{}'.format(int(feature_size)) \
@@ -529,21 +524,19 @@ if __name__=="__main__":
 
     # generator model
     generator_model = set_generator_model(input_size=feature_size,
-                                          hidden_size=hidden_size,
-                                          num_layers=num_layers)
+                                          hidden_size=hidden_size)
 
     # discriminator model
-    discriminator_model = set_discriminator_model(total_hidden_size=hidden_size*num_layers*2)
+    discriminator_model = set_discriminator_model(total_hidden_size=hidden_size*2)
 
     # set optimizer
     tf_generator_optimizer      = RmsProp(learning_rate=0.001).update_params
-    gan_generator_optimizer     = RmsProp(learning_rate=0.0001).update_params
-    gan_discriminator_optimizer = RmsProp(learning_rate=0.00001).update_params
+    gan_generator_optimizer     = RmsProp(learning_rate=0.000).update_params
+    gan_discriminator_optimizer = RmsProp(learning_rate=0.000).update_params
 
 
     train_model(feature_size=feature_size,
                 hidden_size=hidden_size,
-                num_layers=num_layers,
                 generator_model=generator_model,
                 generator_gan_optimizer=gan_generator_optimizer,
                 generator_tf_optimizer=tf_generator_optimizer,

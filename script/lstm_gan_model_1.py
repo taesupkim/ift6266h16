@@ -408,17 +408,23 @@ def train_model(feature_size,
 
             train_batch_count += 1
 
-            print '=============sample length {}============================='.format(window_size)
-            # print 'epoch {}, batch_cnt {} => GAN generator cost          {}'.format(e, train_batch_count, generator_gan_cost)
-            # print 'epoch {}, batch_cnt {} => GAN discriminator cost      {}'.format(e, train_batch_count, discriminator_gan_cost)
-            # print 'epoch {}, batch_cnt {} => GAN input score             {}'.format(e, train_batch_count, discriminator_true_score)
-            # print 'epoch {}, batch_cnt {} => GAN sample score            {}'.format(e, train_batch_count, discriminator_false_score)
-            print 'epoch {}, batch_cnt {} => TF generator grad norm      {}'.format(e, train_batch_count, tf_generator_grad_norm_mean/train_batch_count)
-            # print 'epoch {}, batch_cnt {} => GAN generator grad norm     {}'.format(e, train_batch_count, gan_generator_grad_norm_mean/train_batch_count)
-            # print 'epoch {}, batch_cnt {} => GAN discriminator grad norm {}'.format(e, train_batch_count, gan_discriminator_grad_norm_mean/train_batch_count)
-            print 'epoch {}, batch_cnt {} => TF generator train mse cost {}'.format(e, train_batch_count, tf_square_error)
-            # print 'epoch {}, batch_cnt {} => GAN generator train mse cost{}'.format(e, train_batch_count, gan_square_error)
+            tf_generator_train_cost_list.append(tf_square_error)
 
+            if train_batch_count%100==0:
+                print '=============sample length {}============================='.format(window_size)
+                # print 'epoch {}, batch_cnt {} => GAN generator cost          {}'.format(e, train_batch_count, generator_gan_cost)
+                # print 'epoch {}, batch_cnt {} => GAN discriminator cost      {}'.format(e, train_batch_count, discriminator_gan_cost)
+                # print 'epoch {}, batch_cnt {} => GAN input score             {}'.format(e, train_batch_count, discriminator_true_score)
+                # print 'epoch {}, batch_cnt {} => GAN sample score            {}'.format(e, train_batch_count, discriminator_false_score)
+                print 'epoch {}, batch_cnt {} => TF generator grad norm      {}'.format(e, train_batch_count, tf_generator_grad_norm_mean/train_batch_count)
+                # print 'epoch {}, batch_cnt {} => GAN generator grad norm     {}'.format(e, train_batch_count, gan_generator_grad_norm_mean/train_batch_count)
+                # print 'epoch {}, batch_cnt {} => GAN discriminator grad norm {}'.format(e, train_batch_count, gan_discriminator_grad_norm_mean/train_batch_count)
+                print 'epoch {}, batch_cnt {} => TF generator train mse cost {}'.format(e, train_batch_count, tf_square_error)
+                # print 'epoch {}, batch_cnt {} => GAN generator train mse cost{}'.format(e, train_batch_count, gan_square_error)
+                plot_learning_curve(cost_values=[tf_generator_train_cost_list, ],
+                                    cost_names=['Train Cost', ],
+                                    save_as=model_name+'_model_cost.png',
+                                    legend_pos='upper left')
             sampling_seed_data = []
             # if train_batch_count%10==0:
             if 0:
@@ -520,6 +526,7 @@ if __name__=="__main__":
     model_name = 'lstm_gan' \
                  + '_FEATURE{}'.format(int(feature_size)) \
                  + '_HIDDEN{}'.format(int(hidden_size)) \
+                 + '_WINDOW100_LR1E_2'
 
     # generator model
     generator_model = set_generator_model(input_size=feature_size,
@@ -529,7 +536,7 @@ if __name__=="__main__":
     discriminator_model = set_discriminator_model(total_hidden_size=hidden_size*2)
 
     # set optimizer
-    tf_generator_optimizer      = RmsProp(learning_rate=0.001).update_params
+    tf_generator_optimizer      = RmsProp(learning_rate=0.01).update_params
     gan_generator_optimizer     = RmsProp(learning_rate=0.000).update_params
     gan_discriminator_optimizer = RmsProp(learning_rate=0.000).update_params
 

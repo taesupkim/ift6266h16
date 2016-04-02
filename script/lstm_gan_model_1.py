@@ -520,7 +520,6 @@ if __name__=="__main__":
     model_name = 'lstm_gan' \
                  + '_FEATURE{}'.format(int(feature_size)) \
                  + '_HIDDEN{}'.format(int(hidden_size)) \
-                 + '_LAYERS{}'.format(int(num_layers)) \
 
     # generator model
     generator_model = set_generator_model(input_size=feature_size,

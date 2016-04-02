@@ -36,7 +36,7 @@ def set_train_datastream(feature_size=16000,
     data_stream = Window(offset=feature_size,
                          source_window=window_size*feature_size,
                          target_window=window_size*feature_size,
-                         overlapping=True,
+                         overlapping=False,
                          data_stream=data_stream)
     return data_stream
 

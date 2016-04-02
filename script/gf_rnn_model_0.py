@@ -65,7 +65,7 @@ def set_generator_mean_model(hidden_size,
                              output_size,
                              num_layers):
     layers = []
-    layers.append(LinearLayer(input_dim=hidden_size*num_layers,
+    layers.append(LinearLayer(input_dim=hidden_size,
                               # output_dim=hidden_size*num_layers/2,
                               # name='generator_mean_linear_layer0'))
     # layers.append(Relu(name='generator_mean_relu_layer0'))
@@ -81,7 +81,7 @@ def set_generator_std_model(hidden_size,
                             num_layers):
     layers = []
 
-    layers.append(LinearLayer(input_dim=hidden_size*num_layers,
+    layers.append(LinearLayer(input_dim=hidden_size,
                               # output_dim=hidden_size*num_layers/2,
                               # name='generator_var_linear_layer0'))
     # layers.append(Relu(name='generator_var_relu_layer0'))

@@ -203,8 +203,7 @@ def set_teacher_force_update_function(generator_model,
     tf_updates_cost = square_error.mean()
     tf_updates_dict = get_model_updates(layers=generator_model,
                                         cost=tf_updates_cost,
-                                        optimizer=generator_optimizer,
-                                        use_grad_clip=generator_grad_clipping)
+                                        optimizer=generator_optimizer)
 
     generator_gradient_dict  = get_model_gradients(generator_model, tf_updates_cost)
     generator_gradient_norm  = 0.
@@ -361,7 +360,7 @@ def train_model(feature_size,
         train_target_data = []
         for batch_idx, batch_data in enumerate(train_data_iterator):
             # skip the beginning part
-            if batch_idx<1000:
+            if batch_idx<100:
                 continue
 
             # init train batch data
@@ -421,7 +420,8 @@ def train_model(feature_size,
             print 'epoch {}, batch_cnt {} => TF generator grad norm      {}'.format(e, train_batch_count, tf_generator_grad_norm_mean/train_batch_count)
             print 'epoch {}, batch_cnt {} => GAN generator grad norm     {}'.format(e, train_batch_count, gan_generator_grad_norm_mean/train_batch_count)
             print 'epoch {}, batch_cnt {} => GAN discriminator grad norm {}'.format(e, train_batch_count, gan_discriminator_grad_norm_mean/train_batch_count)
-            print 'epoch {}, batch_cnt {} => generator train mse cost    {}'.format(e, train_batch_count, tf_square_error)
+            print 'epoch {}, batch_cnt {} => TF generator train mse cost {}'.format(e, train_batch_count, tf_square_error)
+            print 'epoch {}, batch_cnt {} => GAN generator train mse cost{}'.format(e, train_batch_count, gan_square_error)
 
             sampling_seed_data = []
             if train_batch_count%10==0:

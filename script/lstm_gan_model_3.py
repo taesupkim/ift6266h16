@@ -505,6 +505,7 @@ def train_model(feature_size,
                 sample_data = sample_data*(1.15*2.**13)
                 sample_data = sample_data.astype(numpy.int16)
                 save_wavfile(sample_data, model_name+'_sample')
+                break
 
 if __name__=="__main__":
     feature_size  = 1600

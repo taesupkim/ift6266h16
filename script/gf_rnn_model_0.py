@@ -88,7 +88,6 @@ def set_generator_std_model(hidden_size,
     #
     # layers.append(LinearLayer(input_dim=hidden_size*num_layers/2,
                               output_dim=output_size,
-                              bias=-1.25,
                               name='generator_var_linear_output'))
     layers.append(Softplus(name='generator_var_relu_output'))
     return layers
@@ -457,7 +456,7 @@ if __name__=="__main__":
                                                    num_layers=num_layers)
 
     # set optimizer
-    generator_optimizer = RmsProp(learning_rate=learning_rate).update_params
+    generator_optimizer = AdaGrad(learning_rate=learning_rate).update_params
 
     train_model(feature_size=feature_size,
                 hidden_size=hidden_size,

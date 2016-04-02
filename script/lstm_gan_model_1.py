@@ -529,7 +529,7 @@ if __name__=="__main__":
     discriminator_model = set_discriminator_model(total_hidden_size=hidden_size*2)
 
     # set optimizer
-    tf_generator_optimizer      = RmsProp(learning_rate=0.0001).update_params
+    tf_generator_optimizer      = RmsProp(learning_rate=0.001).update_params
     gan_generator_optimizer     = RmsProp(learning_rate=0.000).update_params
     gan_discriminator_optimizer = RmsProp(learning_rate=0.000).update_params
 

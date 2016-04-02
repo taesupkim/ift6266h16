@@ -120,11 +120,9 @@ def set_generator_update_function(generator_rnn_model,
     output_std_data = get_tensor_output(input=hidden_data,
                                         layers=generator_std_model,
                                         is_training=True)
-
     # get generator cost (time_length x num_samples x hidden_size)
     generator_cost  = 0.5*tensor.inv(2.0*tensor.sqr(output_std_data))*tensor.sqr(output_mean_data-target_data)
     generator_cost += tensor.log(output_std_data) + 0.5*tensor.log(2.0*numpy.pi)
-
     # set generator update
     generator_updates_cost = tensor.sum(generator_cost, axis=(0,2)).mean()
     generator_updates_dict = get_model_updates(layers=generator_rnn_model+generator_mean_model+generator_std_model,
@@ -136,7 +134,7 @@ def set_generator_update_function(generator_rnn_model,
     gradient_norm  = 0.
     for grad in gradient_dict:
         gradient_norm += tensor.sum(grad**2)
-        gradient_norm  = tensor.sqrt(gradient_norm)
+    gradient_norm  = tensor.sqrt(gradient_norm)
 
     # set generator update inputs
     generator_updates_inputs  = [source_data,
@@ -286,6 +284,8 @@ def train_model(feature_size,
         train_source_data = []
         train_target_data = []
         for batch_idx, batch_data in enumerate(train_data_iterator):
+            if batch_idx<100:
+                continue
             if train_batch_size==0:
                 train_source_data = []
                 train_target_data = []
@@ -314,8 +314,8 @@ def train_model(feature_size,
                 train_batch_size = 0
 
             # normalize
-            train_source_data = (train_source_data/(2.**15)).astype(floatX)
-            train_target_data = (train_target_data/(2.**15)).astype(floatX)
+            train_source_data = (train_source_data/(1.15*2.**13)).astype(floatX)
+            train_target_data = (train_target_data/(1.15*2.**13)).astype(floatX)
 
             # update generator
             generator_updater_input = [train_source_data,
@@ -373,8 +373,8 @@ def train_model(feature_size,
                         valid_batch_size = 0
 
                     # normalize
-                    valid_source_data = (valid_source_data/(2.**15)).astype(floatX)
-                    valid_target_data = (valid_target_data/(2.**15)).astype(floatX)
+                    valid_source_data = (valid_source_data/(1.15*2.**13)).astype(floatX)
+                    valid_target_data = (valid_target_data/(1.15*2.**13)).astype(floatX)
 
                     generator_evaluator_input = [valid_source_data,
                                                  valid_target_data]
@@ -424,7 +424,7 @@ def train_model(feature_size,
                     output_data[s] = curr_input_data
                 sample_data = numpy.swapaxes(output_data, axis1=0, axis2=1)
                 sample_data = sample_data.reshape((num_samples, -1))
-                sample_data = sample_data*(2.**15)
+                sample_data = sample_data*(1.15*2.**13)
                 sample_data = sample_data.astype(numpy.int16)
                 save_wavfile(sample_data, model_name+'_sample')
 

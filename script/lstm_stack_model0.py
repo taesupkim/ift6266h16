@@ -137,7 +137,7 @@ def set_generator_update_function(generator_rnn_model,
     gradient_norm  = 0.
     for grad in gradient_dict:
         gradient_norm += tensor.sum(grad**2)
-        gradient_norm  = tensor.sqrt(gradient_norm)
+    gradient_norm  = tensor.sqrt(gradient_norm)
 
     # set generator update inputs
     generator_updates_inputs  = [source_data,
@@ -293,6 +293,8 @@ def train_model(feature_size,
         train_source_data = []
         train_target_data = []
         for batch_idx, batch_data in enumerate(train_data_iterator):
+            if batch_idx<100:
+                continue
             if train_batch_size==0:
                 train_source_data = []
                 train_target_data = []
@@ -321,8 +323,8 @@ def train_model(feature_size,
                 train_batch_size = 0
 
             # normalize
-            train_source_data = (train_source_data/(2.**15)).astype(floatX)
-            train_target_data = (train_target_data/(2.**15)).astype(floatX)
+            train_source_data = (train_source_data/(1.15*2.**13)).astype(floatX)
+            train_target_data = (train_target_data/(1.15*2.**13)).astype(floatX)
 
             # update generator
             generator_updater_input = [train_source_data,
@@ -380,8 +382,8 @@ def train_model(feature_size,
                         valid_batch_size = 0
 
                     # normalize
-                    valid_source_data = (valid_source_data/(2.**15)).astype(floatX)
-                    valid_target_data = (valid_target_data/(2.**15)).astype(floatX)
+                    valid_source_data = (valid_source_data/(1.15*2.**13)).astype(floatX)
+                    valid_target_data = (valid_target_data/(1.15*2.**13)).astype(floatX)
 
                     generator_evaluator_input = [valid_source_data,
                                                  valid_target_data]
@@ -431,7 +433,7 @@ def train_model(feature_size,
                     output_data[s] = curr_input_data
                 sample_data = numpy.swapaxes(output_data, axis1=0, axis2=1)
                 sample_data = sample_data.reshape((num_samples, -1))
-                sample_data = sample_data*(2.**15)
+                sample_data = sample_data*(1.15*2.**13)
                 sample_data = sample_data.astype(numpy.int16)
                 save_wavfile(sample_data, model_name+'_sample')
 

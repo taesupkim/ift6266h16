@@ -428,7 +428,7 @@ def train_model(feature_size,
                 print 'epoch {}, batch_cnt {} => TF generator train mse cost {}'.format(e, train_batch_count, tf_square_error)
                 # print 'epoch {}, batch_cnt {} => GAN generator train mse cost{}'.format(e, train_batch_count, gan_square_error)
 
-            if train_batch_count==10000:
+            if train_batch_count==5000:
                 stop_flag = True
                 numpy.save(file=model_name+'train_cost',
                            arr=numpy.asarray(tf_generator_train_cost_list))

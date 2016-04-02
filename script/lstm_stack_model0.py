@@ -66,7 +66,7 @@ def set_generator_mean_model(hidden_size,
                              output_size,
                              num_layers):
     layers = []
-    layers.append(LinearLayer(input_dim=hidden_size*num_layers,
+    layers.append(LinearLayer(input_dim=hidden_size,
                               # output_dim=hidden_size*num_layers/2,
                               # name='generator_mean_linear_layer0'))
     # layers.append(Relu(name='generator_mean_relu_layer0'))
@@ -82,7 +82,7 @@ def set_generator_std_model(hidden_size,
                             num_layers):
     layers = []
 
-    layers.append(LinearLayer(input_dim=hidden_size*num_layers,
+    layers.append(LinearLayer(input_dim=hidden_size,
                               # output_dim=hidden_size*num_layers/2,
                               # name='generator_var_linear_layer0'))
     # layers.append(Relu(name='generator_var_relu_layer0'))
@@ -113,6 +113,7 @@ def set_generator_update_function(generator_rnn_model,
 
     # get generator hidden data
     hidden_data = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)[0]
+    hidden_data = hidden_data[:][-1]
     hidden_data = hidden_data.dimshuffle(0, 2, 1, 3).flatten(3)
 
     # get generator output data
@@ -173,6 +174,7 @@ def set_generator_evaluation_function(generator_rnn_model,
 
     # get generator hidden data
     hidden_data = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)[0]
+    hidden_data = hidden_data[:][-1]
     hidden_data = hidden_data.dimshuffle(0, 2, 1, 3).flatten(3)
 
     # get generator output data
@@ -218,6 +220,7 @@ def set_generator_sampling_function(generator_rnn_model,
     generator_input_data_list = [cur_input_data,
                                  prev_hidden_data]
     cur_hidden_data = generator_rnn_model[0].forward(generator_input_data_list, is_training=False)[0]
+    cur_hidden_data = cur_hidden_data[-1]
 
     # get generator output data
     output_mean_data = get_tensor_output(input=cur_hidden_data.dimshuffle(1, 0, 2).flatten(2),

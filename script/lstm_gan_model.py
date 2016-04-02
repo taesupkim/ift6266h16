@@ -5,7 +5,7 @@ from theano import tensor
 from data.window import Window
 from util.utils import save_wavfile
 from layer.activations import Tanh, Logistic, Relu
-from layer.layers import LinearLayer, LstmStackLayer, LstmGanForceLayer
+from layer.layers import LinearLayer, LstmStackLayer, SingleLstmGanForceLayer
 from layer.layer_utils import get_tensor_output, get_model_updates, get_lstm_outputs, get_model_gradients
 from optimizer.rmsprop import RmsProp
 from numpy.random import RandomState
@@ -51,14 +51,11 @@ def set_valid_datastream(feature_size=16000,
     return data_stream
 
 def set_generator_model(input_size,
-                        hidden_size,
-                        num_layers):
+                        hidden_size):
     layers = []
-    layers.append(LstmGanForceLayer(input_dim=input_size,
-                                     hidden_dim=hidden_size,
-                                     num_rnn_layers=num_layers,
-                                     num_lin_layers=num_layers,
-                                     name='generator_rnn_model'))
+    layers.append(SingleLstmGanForceLayer(input_dim=input_size,
+                                          hidden_dim=hidden_size,
+                                          name='generator_model'))
     return layers
 
 def set_discriminator_model(total_hidden_size):
@@ -96,10 +93,10 @@ def set_gan_update_function(generator_model,
     # get generator output data
     output_data_set = generator_model[0].forward(generator_input_data_list, is_training=True)
     output_sequence = output_data_set[0]
-    data_hidden     = output_data_set[1].dimshuffle(0, 2, 1, 3).flatten(3)
-    data_cell       = output_data_set[2].dimshuffle(0, 2, 1, 3).flatten(3)
-    model_hidden    = output_data_set[3].dimshuffle(0, 2, 1, 3).flatten(3)
-    model_cell      = output_data_set[4].dimshuffle(0, 2, 1, 3).flatten(3)
+    data_hidden     = output_data_set[1]
+    data_cell       = output_data_set[2]
+    model_hidden    = output_data_set[3]
+    model_cell      = output_data_set[4]
 
     condition_hidden = data_hidden[:-1]
     condition_cell   = data_cell[:-1]
@@ -157,7 +154,7 @@ def set_gan_update_function(generator_model,
         discriminator_gradient_norm += tensor.sum(grad**2)
     discriminator_gradient_norm  = tensor.sqrt(discriminator_gradient_norm)
 
-    square_error = tensor.sqr(target_sequence-output_sequence)
+    square_error = tensor.sqr(target_sequence-output_sequence).sum(axis=2)
 
     # set gan update inputs
     gan_updates_inputs  = [input_sequence,
@@ -197,7 +194,7 @@ def set_teacher_force_update_function(generator_model,
     output_sequence = output_data_set[0]
 
     # get square error
-    square_error = tensor.sqr(target_sequence-output_sequence)
+    square_error = tensor.sqr(target_sequence-output_sequence).sum(axis=2)
 
     # set generator update
     tf_updates_cost = square_error.mean()
@@ -299,7 +296,6 @@ def set_sample_function(generator_model):
 
 def train_model(feature_size,
                 hidden_size,
-                num_layers,
                 generator_model,
                 generator_gan_optimizer,
                 generator_tf_optimizer,
@@ -314,13 +310,13 @@ def train_model(feature_size,
                                                              generator_optimizer=generator_tf_optimizer,
                                                              generator_grad_clipping=0.0)
 
-    print 'COMPILING GAN UPDATE FUNCTION '
-    gan_generator_updater = set_gan_update_function(generator_model=generator_model,
-                                                    discriminator_model=discriminator_model,
-                                                    generator_optimizer=generator_gan_optimizer,
-                                                    discriminator_optimizer=discriminator_optimizer,
-                                                    generator_grad_clipping=0.0,
-                                                    discriminator_grad_clipping=0.0)
+    # print 'COMPILING GAN UPDATE FUNCTION '
+    # gan_generator_updater = set_gan_update_function(generator_model=generator_model,
+    #                                                 discriminator_model=discriminator_model,
+    #                                                 generator_optimizer=generator_gan_optimizer,
+    #                                                 discriminator_optimizer=discriminator_optimizer,
+    #                                                 generator_grad_clipping=0.0,
+    #                                                 discriminator_grad_clipping=0.0)
 
     # evaluator
     print 'COMPILING EVALUATION FUNCTION '
@@ -360,7 +356,7 @@ def train_model(feature_size,
         train_target_data = []
         for batch_idx, batch_data in enumerate(train_data_iterator):
             # skip the beginning part
-            if batch_idx<100:
+            if batch_idx<10000:
                 continue
 
             # init train batch data
@@ -401,30 +397,31 @@ def train_model(feature_size,
             tf_generator_grad_norm_mean += tf_update_output[1]
 
             # gan update
-            gan_update_output = gan_generator_updater(train_source_data, train_target_data)
-            generator_gan_cost               = gan_update_output[0].mean()
-            discriminator_gan_cost           = gan_update_output[1].mean()
-            discriminator_true_score         = gan_update_output[2].mean()
-            discriminator_false_score        = gan_update_output[3].mean()
-            gan_square_error                 = gan_update_output[4].mean()
-            gan_generator_grad_norm_mean    += gan_update_output[5]
-            gan_discriminator_grad_norm_mean+= gan_update_output[6]
+            # gan_update_output = gan_generator_updater(train_source_data, train_target_data)
+            # generator_gan_cost               = gan_update_output[0].mean()
+            # discriminator_gan_cost           = gan_update_output[1].mean()
+            # discriminator_true_score         = gan_update_output[2].mean()
+            # discriminator_false_score        = gan_update_output[3].mean()
+            # gan_square_error                 = gan_update_output[4].mean()
+            # gan_generator_grad_norm_mean    += gan_update_output[5]
+            # gan_discriminator_grad_norm_mean+= gan_update_output[6]
 
             train_batch_count += 1
 
             print '=============sample length {}============================='.format(window_size)
-            print 'epoch {}, batch_cnt {} => GAN generator cost          {}'.format(e, train_batch_count, generator_gan_cost)
-            print 'epoch {}, batch_cnt {} => GAN discriminator cost      {}'.format(e, train_batch_count, discriminator_gan_cost)
-            print 'epoch {}, batch_cnt {} => GAN input score             {}'.format(e, train_batch_count, discriminator_true_score)
-            print 'epoch {}, batch_cnt {} => GAN sample score            {}'.format(e, train_batch_count, discriminator_false_score)
+            # print 'epoch {}, batch_cnt {} => GAN generator cost          {}'.format(e, train_batch_count, generator_gan_cost)
+            # print 'epoch {}, batch_cnt {} => GAN discriminator cost      {}'.format(e, train_batch_count, discriminator_gan_cost)
+            # print 'epoch {}, batch_cnt {} => GAN input score             {}'.format(e, train_batch_count, discriminator_true_score)
+            # print 'epoch {}, batch_cnt {} => GAN sample score            {}'.format(e, train_batch_count, discriminator_false_score)
             print 'epoch {}, batch_cnt {} => TF generator grad norm      {}'.format(e, train_batch_count, tf_generator_grad_norm_mean/train_batch_count)
-            print 'epoch {}, batch_cnt {} => GAN generator grad norm     {}'.format(e, train_batch_count, gan_generator_grad_norm_mean/train_batch_count)
-            print 'epoch {}, batch_cnt {} => GAN discriminator grad norm {}'.format(e, train_batch_count, gan_discriminator_grad_norm_mean/train_batch_count)
+            # print 'epoch {}, batch_cnt {} => GAN generator grad norm     {}'.format(e, train_batch_count, gan_generator_grad_norm_mean/train_batch_count)
+            # print 'epoch {}, batch_cnt {} => GAN discriminator grad norm {}'.format(e, train_batch_count, gan_discriminator_grad_norm_mean/train_batch_count)
             print 'epoch {}, batch_cnt {} => TF generator train mse cost {}'.format(e, train_batch_count, tf_square_error)
-            print 'epoch {}, batch_cnt {} => GAN generator train mse cost{}'.format(e, train_batch_count, gan_square_error)
+            # print 'epoch {}, batch_cnt {} => GAN generator train mse cost{}'.format(e, train_batch_count, gan_square_error)
 
             sampling_seed_data = []
-            if train_batch_count%10==0:
+            # if train_batch_count%10==0:
+            if 0:
                 # set valid data stream with proper length (window size)
                 valid_window_size = window_size
                 valid_data_stream = set_valid_datastream(feature_size=feature_size,
@@ -517,33 +514,28 @@ def train_model(feature_size,
             #     save_wavfile(sample_data, model_name+'_sample')
 
 if __name__=="__main__":
-    feature_size  = 160
-    hidden_size   = 240
-    learning_rate = 1e-4
-    num_layers    = 2
+    feature_size  = 1600
+    hidden_size   = 1000
 
     model_name = 'lstm_gan' \
                  + '_FEATURE{}'.format(int(feature_size)) \
                  + '_HIDDEN{}'.format(int(hidden_size)) \
-                 + '_LAYERS{}'.format(int(num_layers)) \
 
     # generator model
     generator_model = set_generator_model(input_size=feature_size,
-                                          hidden_size=hidden_size,
-                                          num_layers=num_layers)
+                                          hidden_size=hidden_size)
 
     # discriminator model
-    discriminator_model = set_discriminator_model(total_hidden_size=hidden_size*num_layers*2)
+    discriminator_model = set_discriminator_model(total_hidden_size=hidden_size*2)
 
     # set optimizer
     tf_generator_optimizer      = RmsProp(learning_rate=0.001).update_params
-    gan_generator_optimizer     = RmsProp(learning_rate=0.0).update_params
-    gan_discriminator_optimizer = RmsProp(learning_rate=0.0).update_params
+    gan_generator_optimizer     = RmsProp(learning_rate=0.000).update_params
+    gan_discriminator_optimizer = RmsProp(learning_rate=0.000).update_params
 
 
     train_model(feature_size=feature_size,
                 hidden_size=hidden_size,
-                num_layers=num_layers,
                 generator_model=generator_model,
                 generator_gan_optimizer=gan_generator_optimizer,
                 generator_tf_optimizer=tf_generator_optimizer,

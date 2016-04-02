@@ -154,7 +154,7 @@ def set_gan_update_function(generator_model,
         discriminator_gradient_norm += tensor.sum(grad**2)
     discriminator_gradient_norm  = tensor.sqrt(discriminator_gradient_norm)
 
-    square_error = tensor.sqr(target_sequence-output_sequence)
+    square_error = tensor.sqr(target_sequence-output_sequence).mean(axis=2)
 
     # set gan update inputs
     gan_updates_inputs  = [input_sequence,
@@ -420,7 +420,8 @@ def train_model(feature_size,
             # print 'epoch {}, batch_cnt {} => GAN generator train mse cost{}'.format(e, train_batch_count, gan_square_error)
 
             sampling_seed_data = []
-            if train_batch_count%10==0:
+            # if train_batch_count%10==0:
+            if 0:
                 # set valid data stream with proper length (window size)
                 valid_window_size = window_size
                 valid_data_stream = set_valid_datastream(feature_size=feature_size,

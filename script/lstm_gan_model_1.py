@@ -310,13 +310,13 @@ def train_model(feature_size,
                                                              generator_optimizer=generator_tf_optimizer,
                                                              generator_grad_clipping=0.0)
 
-    print 'COMPILING GAN UPDATE FUNCTION '
-    gan_generator_updater = set_gan_update_function(generator_model=generator_model,
-                                                    discriminator_model=discriminator_model,
-                                                    generator_optimizer=generator_gan_optimizer,
-                                                    discriminator_optimizer=discriminator_optimizer,
-                                                    generator_grad_clipping=0.0,
-                                                    discriminator_grad_clipping=0.0)
+    # print 'COMPILING GAN UPDATE FUNCTION '
+    # gan_generator_updater = set_gan_update_function(generator_model=generator_model,
+    #                                                 discriminator_model=discriminator_model,
+    #                                                 generator_optimizer=generator_gan_optimizer,
+    #                                                 discriminator_optimizer=discriminator_optimizer,
+    #                                                 generator_grad_clipping=0.0,
+    #                                                 discriminator_grad_clipping=0.0)
 
     # evaluator
     print 'COMPILING EVALUATION FUNCTION '
@@ -397,27 +397,27 @@ def train_model(feature_size,
             tf_generator_grad_norm_mean += tf_update_output[1]
 
             # gan update
-            gan_update_output = gan_generator_updater(train_source_data, train_target_data)
-            generator_gan_cost               = gan_update_output[0].mean()
-            discriminator_gan_cost           = gan_update_output[1].mean()
-            discriminator_true_score         = gan_update_output[2].mean()
-            discriminator_false_score        = gan_update_output[3].mean()
-            gan_square_error                 = gan_update_output[4].mean()
-            gan_generator_grad_norm_mean    += gan_update_output[5]
-            gan_discriminator_grad_norm_mean+= gan_update_output[6]
+            # gan_update_output = gan_generator_updater(train_source_data, train_target_data)
+            # generator_gan_cost               = gan_update_output[0].mean()
+            # discriminator_gan_cost           = gan_update_output[1].mean()
+            # discriminator_true_score         = gan_update_output[2].mean()
+            # discriminator_false_score        = gan_update_output[3].mean()
+            # gan_square_error                 = gan_update_output[4].mean()
+            # gan_generator_grad_norm_mean    += gan_update_output[5]
+            # gan_discriminator_grad_norm_mean+= gan_update_output[6]
 
             train_batch_count += 1
 
             print '=============sample length {}============================='.format(window_size)
-            print 'epoch {}, batch_cnt {} => GAN generator cost          {}'.format(e, train_batch_count, generator_gan_cost)
-            print 'epoch {}, batch_cnt {} => GAN discriminator cost      {}'.format(e, train_batch_count, discriminator_gan_cost)
-            print 'epoch {}, batch_cnt {} => GAN input score             {}'.format(e, train_batch_count, discriminator_true_score)
-            print 'epoch {}, batch_cnt {} => GAN sample score            {}'.format(e, train_batch_count, discriminator_false_score)
+            # print 'epoch {}, batch_cnt {} => GAN generator cost          {}'.format(e, train_batch_count, generator_gan_cost)
+            # print 'epoch {}, batch_cnt {} => GAN discriminator cost      {}'.format(e, train_batch_count, discriminator_gan_cost)
+            # print 'epoch {}, batch_cnt {} => GAN input score             {}'.format(e, train_batch_count, discriminator_true_score)
+            # print 'epoch {}, batch_cnt {} => GAN sample score            {}'.format(e, train_batch_count, discriminator_false_score)
             print 'epoch {}, batch_cnt {} => TF generator grad norm      {}'.format(e, train_batch_count, tf_generator_grad_norm_mean/train_batch_count)
-            print 'epoch {}, batch_cnt {} => GAN generator grad norm     {}'.format(e, train_batch_count, gan_generator_grad_norm_mean/train_batch_count)
-            print 'epoch {}, batch_cnt {} => GAN discriminator grad norm {}'.format(e, train_batch_count, gan_discriminator_grad_norm_mean/train_batch_count)
+            # print 'epoch {}, batch_cnt {} => GAN generator grad norm     {}'.format(e, train_batch_count, gan_generator_grad_norm_mean/train_batch_count)
+            # print 'epoch {}, batch_cnt {} => GAN discriminator grad norm {}'.format(e, train_batch_count, gan_discriminator_grad_norm_mean/train_batch_count)
             print 'epoch {}, batch_cnt {} => TF generator train mse cost {}'.format(e, train_batch_count, tf_square_error)
-            print 'epoch {}, batch_cnt {} => GAN generator train mse cost{}'.format(e, train_batch_count, gan_square_error)
+            # print 'epoch {}, batch_cnt {} => GAN generator train mse cost{}'.format(e, train_batch_count, gan_square_error)
 
             sampling_seed_data = []
             if train_batch_count%10==0:

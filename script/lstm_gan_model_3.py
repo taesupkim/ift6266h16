@@ -436,7 +436,7 @@ def train_model(feature_size,
                 print 'epoch {}, batch_cnt {} => GAN discrim.  grad norm {}'.format(e, train_batch_count, gan_discriminator_grad_list[-1])
 
 
-            if train_batch_count%1000==0:
+            if train_batch_count%100==0:
                 stop_flag = True
                 numpy.save(file=model_name+'tf_mse',
                            arr=numpy.asarray(tf_generator_cost_list))
@@ -458,7 +458,7 @@ def train_model(feature_size,
                            arr=numpy.asarray(gan_discriminator_grad_list))
 
             num_samples = 10
-            if train_batch_count%1000==0:
+            if train_batch_count%100==0:
                 valid_data_stream = set_valid_datastream(feature_size=feature_size,
                                                          window_size=1)
                 # get train data iterator
@@ -488,7 +488,7 @@ def train_model(feature_size,
                 num_sec     = 10
                 sampling_length = num_sec*sampling_rate/feature_size
 
-                curr_input_data  = sampling_seed_data
+                curr_input_data  = sampling_seed_data.reshape(num_samples, feature_size)
                 prev_hidden_data = np_rng.normal(size=(num_samples, hidden_size)).astype(floatX)
                 prev_hidden_data = numpy.tanh(prev_hidden_data)
                 prev_cell_data   = np_rng.normal(size=(num_samples, hidden_size)).astype(floatX)

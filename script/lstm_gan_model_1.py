@@ -526,8 +526,8 @@ if __name__=="__main__":
 
         # set optimizer
         tf_generator_optimizer      = RmsProp(learning_rate=lr).update_params
-        gan_generator_optimizer     = RmsProp(learning_rate=lr).update_params
-        gan_discriminator_optimizer = RmsProp(learning_rate=lr).update_params
+        gan_generator_optimizer     = RmsProp(learning_rate=lr*0.1).update_params
+        gan_discriminator_optimizer = RmsProp(learning_rate=lr*0.1).update_params
 
 
         train_model(feature_size=feature_size,

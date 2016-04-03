@@ -307,15 +307,15 @@ def train_model(feature_size,
     print 'COMPILING TEACHER FORCE UPDATE FUNCTION '
     tf_generator_updater = set_teacher_force_update_function(generator_model=generator_model,
                                                              generator_optimizer=generator_tf_optimizer,
-                                                             generator_grad_clipping=0.0)
+                                                             generator_grad_clipping=60.0)
 
     print 'COMPILING GAN UPDATE FUNCTION '
     gan_generator_updater = set_gan_update_function(generator_model=generator_model,
                                                     discriminator_model=discriminator_model,
                                                     generator_optimizer=generator_gan_optimizer,
                                                     discriminator_optimizer=discriminator_optimizer,
-                                                    generator_grad_clipping=0.0,
-                                                    discriminator_grad_clipping=0.0)
+                                                    generator_grad_clipping=60.0,
+                                                    discriminator_grad_clipping=40.0)
 
     # evaluator
     print 'COMPILING EVALUATION FUNCTION '

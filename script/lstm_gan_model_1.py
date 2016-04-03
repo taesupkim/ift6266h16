@@ -34,7 +34,7 @@ def set_train_datastream(feature_size=16000,
     data_stream = Window(offset=feature_size,
                          source_window=window_size*feature_size,
                          target_window=window_size*feature_size,
-                         overlapping=False,
+                         overlapping=True,
                          data_stream=data_stream)
     return data_stream
 
@@ -307,15 +307,15 @@ def train_model(feature_size,
     print 'COMPILING TEACHER FORCE UPDATE FUNCTION '
     tf_generator_updater = set_teacher_force_update_function(generator_model=generator_model,
                                                              generator_optimizer=generator_tf_optimizer,
-                                                             generator_grad_clipping=0.0)
+                                                             generator_grad_clipping=60.0)
 
     print 'COMPILING GAN UPDATE FUNCTION '
     gan_generator_updater = set_gan_update_function(generator_model=generator_model,
                                                     discriminator_model=discriminator_model,
                                                     generator_optimizer=generator_gan_optimizer,
                                                     discriminator_optimizer=discriminator_optimizer,
-                                                    generator_grad_clipping=0.0,
-                                                    discriminator_grad_clipping=0.0)
+                                                    generator_grad_clipping=60.0,
+                                                    discriminator_grad_clipping=40.0)
 
     # evaluator
     print 'COMPILING EVALUATION FUNCTION '
@@ -356,7 +356,7 @@ def train_model(feature_size,
         train_target_data = []
         for batch_idx, batch_data in enumerate(train_data_iterator):
             # skip the beginning part
-            if batch_idx<1000:
+            if batch_idx<10000:
                 continue
 
             # init train batch data
@@ -436,7 +436,7 @@ def train_model(feature_size,
                 print 'epoch {}, batch_cnt {} => GAN discrim.  grad norm {}'.format(e, train_batch_count, gan_discriminator_grad_list[-1])
 
 
-            if train_batch_count%1000==0:
+            if train_batch_count%100==0:
                 stop_flag = True
                 numpy.save(file=model_name+'tf_mse',
                            arr=numpy.asarray(tf_generator_cost_list))
@@ -458,7 +458,7 @@ def train_model(feature_size,
                            arr=numpy.asarray(gan_discriminator_grad_list))
 
             num_samples = 10
-            if train_batch_count%1000==0:
+            if train_batch_count%100==0:
                 valid_data_stream = set_valid_datastream(feature_size=feature_size,
                                                          window_size=1)
                 # get train data iterator
@@ -488,7 +488,7 @@ def train_model(feature_size,
                 num_sec     = 10
                 sampling_length = num_sec*sampling_rate/feature_size
 
-                curr_input_data  = sampling_seed_data
+                curr_input_data  = sampling_seed_data.reshape(num_samples, feature_size)
                 prev_hidden_data = np_rng.normal(size=(num_samples, hidden_size)).astype(floatX)
                 prev_hidden_data = numpy.tanh(prev_hidden_data)
                 prev_cell_data   = np_rng.normal(size=(num_samples, hidden_size)).astype(floatX)
@@ -507,11 +507,12 @@ def train_model(feature_size,
                 sample_data = sample_data.astype(numpy.int16)
                 save_wavfile(sample_data, model_name+'_sample')
 
+
 if __name__=="__main__":
     feature_size  = 1600
     hidden_size   = 2000
 
-    lr_list = [0.01, 0.001, 0.0001]
+    lr_list = [0.001, 0.0001]
     for lr in lr_list:
         model_name = 'lstm_gan' \
                      + '_FEATURE{}'.format(int(feature_size)) \
@@ -526,8 +527,8 @@ if __name__=="__main__":
 
         # set optimizer
         tf_generator_optimizer      = RmsProp(learning_rate=lr).update_params
-        gan_generator_optimizer     = RmsProp(learning_rate=lr*0.1).update_params
-        gan_discriminator_optimizer = RmsProp(learning_rate=lr*0.01).update_params
+        gan_generator_optimizer     = RmsProp(learning_rate=lr).update_params
+        gan_discriminator_optimizer = RmsProp(learning_rate=lr).update_params
 
 
         train_model(feature_size=feature_size,

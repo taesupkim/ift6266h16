@@ -34,7 +34,7 @@ def set_train_datastream(feature_size=16000,
     data_stream = Window(offset=feature_size,
                          source_window=window_size*feature_size,
                          target_window=window_size*feature_size,
-                         overlapping=True,
+                         overlapping=False,
                          data_stream=data_stream)
     return data_stream
 
@@ -356,7 +356,7 @@ def train_model(feature_size,
         train_target_data = []
         for batch_idx, batch_data in enumerate(train_data_iterator):
             # skip the beginning part
-            if batch_idx<10000:
+            if batch_idx<1000:
                 continue
 
             # init train batch data
@@ -508,8 +508,8 @@ def train_model(feature_size,
                 save_wavfile(sample_data, model_name+'_sample')
 
 if __name__=="__main__":
-    feature_size  = 160
-    hidden_size   = 100
+    feature_size  = 1600
+    hidden_size   = 2000
 
     lr_list = [0.01, 0.001, 0.0001]
     for lr in lr_list:

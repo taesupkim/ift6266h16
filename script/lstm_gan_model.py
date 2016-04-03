@@ -154,12 +154,13 @@ def set_gan_update_function(generator_model,
 
     # set discriminator update
     discriminator_updates_cost = discriminator_gan_cost.mean()
-    discriminator_updates_dict = get_model_updates(layers=discriminator_model,
+    discriminator_updates_dict = get_model_updates(layers=discriminator_feature_model+discriminator_output_model,
                                                    cost=discriminator_updates_cost,
                                                    optimizer=discriminator_optimizer,
                                                    use_grad_clip=discriminator_grad_clipping)
 
-    discriminator_gradient_dict  = get_model_gradients(discriminator_model, discriminator_updates_cost)
+    discriminator_gradient_dict  = get_model_gradients(discriminator_feature_model+discriminator_output_model,
+                                                       discriminator_updates_cost)
     discriminator_gradient_norm  = 0.
     for grad in discriminator_gradient_dict:
         discriminator_gradient_norm += tensor.sum(grad**2)

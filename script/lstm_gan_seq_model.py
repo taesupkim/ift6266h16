@@ -556,8 +556,8 @@ if __name__=="__main__":
                                                         hidden_size=hidden_size)
     # discriminator model
     discriminator_rnn_model = set_discriminator_rnn_model(input_size=feature_size+hidden_size,
-                                                          hidden_size=hidden_size)
-    discriminator_output_model = set_discriminator_output_model(hidden_size=hidden_size)
+                                                          hidden_size=hidden_size*2)
+    discriminator_output_model = set_discriminator_output_model(hidden_size=hidden_size*2)
 
     # set optimizer
     tf_generator_optimizer      = RmsProp(learning_rate=lr).update_params

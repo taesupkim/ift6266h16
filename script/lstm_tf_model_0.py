@@ -444,7 +444,7 @@ def train_model(feature_size,
             gan_mse_list.append(gan_square_error)
 
             if train_batch_count%10==0:
-                print '=============sample length {}============================='.format(window_size)
+                print '==={}///sample length {}==='.format(model_name, window_size)
                 print 'epoch {}, batch_cnt {} => TF  generator mse cost  {}'.format(e, train_batch_count, tf_mse_list[-1])
                 print 'epoch {}, batch_cnt {} => GAN generator mse cost  {}'.format(e, train_batch_count, gan_mse_list[-1])
                 print '----------------------------------------------------------'
@@ -525,9 +525,9 @@ if __name__=="__main__":
     hidden_size   = 1000
     lr=1e-4
 
-    model_name = 'lstm_gan_seq' \
+    model_name = 'LSTM_TF' \
                 + '_FEATURE{}'.format(int(feature_size)) \
-                 + '_HIDDEN{}'.format(int(hidden_size)) \
+                + '_HIDDEN{}'.format(int(hidden_size)) \
 
     # generator model
     generator_rnn_model    = set_generator_rnn_model(input_size=feature_size,

@@ -18,37 +18,6 @@ np_rng = RandomState(42)
 floatX = theano.config.floatX
 sampling_rate = 16000
 
-from fuel.datasets.hdf5 import H5PYDataset
-
-class YouTubeAudio(H5PYDataset):
-    def __init__(self, youtube_id, **kwargs):
-        super(YouTubeAudio, self).__init__(
-            file_or_path='/data/lisatmp4/taesup/data/YouTubeAudio/'+youtube_id+'.hdf5',
-            which_sets=('train',), **kwargs
-        )
-
-def set_train_datastream(feature_size=16000,
-                         window_size=100,
-                         youtube_id='XqaJ2Ol5cC4_train'):
-    data_stream = YouTubeAudio(youtube_id).get_example_stream()
-    data_stream = Window(offset=feature_size,
-                         source_window=window_size*feature_size,
-                         target_window=window_size*feature_size,
-                         overlapping=False,
-                         data_stream=data_stream)
-    return data_stream
-
-def set_valid_datastream(feature_size=16000,
-                         window_size=100,
-                         youtube_id='XqaJ2Ol5cC4_valid'):
-    data_stream = YouTubeAudio(youtube_id).get_example_stream()
-    data_stream = Window(offset=feature_size,
-                         source_window=window_size*feature_size,
-                         target_window=window_size*feature_size,
-                         overlapping=False,
-                         data_stream=data_stream)
-    return data_stream
-
 def set_generator_rnn_model(input_size,
                             hidden_size):
     layers = []
@@ -379,25 +348,26 @@ def train_model(feature_size,
 
     train_batch_count = 0
     for e in xrange(num_epochs):
-        window_size        = init_window_size + 5*e
-        full_batch_size    = feature_size*batch_size*window_size
-        last_batch_idx     = num_train_total_steps-(full_batch_size+feature_size)
-        train_batch_orders = np_rng.permutation(last_batch_idx)
+        window_size      = init_window_size + 5*e
+        sequence_size    = feature_size*window_size
+        last_seq_idx     = num_train_total_steps-(sequence_size+feature_size)
+        train_seq_orders = np_rng.permutation(last_seq_idx)
+        train_seq_orders = train_seq_orders[:last_seq_idx-last_seq_idx%batch_size]
+        train_seq_orders = train_seq_orders.reshape((-1, batch_size))
+
 
         # for each batch
-        for batch_idx, batch_start_idx in enumerate(train_batch_orders):
+        for batch_idx, batch_info in enumerate(train_seq_orders):
             # source data
-            batch_start_idx = batch_start_idx
-            batch_end_idx   = batch_start_idx + full_batch_size
-            train_source_data = train_raw_data[batch_start_idx:batch_end_idx]
-            train_source_data = train_source_data.reshape(batch_size, window_size, feature_size)
+            train_source_idx  = batch_info.reshape((batch_size, 1)) + numpy.repeat(numpy.arange(sequence_size).reshape((1, sequence_size)), batch_size, axis=0)
+            train_source_data = train_raw_data[train_source_idx]
+            train_source_data = train_source_data.reshape((batch_size, window_size, feature_size))
             train_source_data = numpy.swapaxes(train_source_data, axis1=0, axis2=1)
 
             # target data
-            batch_start_idx = batch_start_idx + feature_size
-            batch_end_idx   = batch_start_idx + full_batch_size
-            train_target_data = train_raw_data[batch_start_idx:batch_end_idx]
-            train_target_data = train_target_data.reshape(batch_size, window_size, feature_size)
+            train_target_idx  = train_source_idx + feature_size
+            train_target_data = train_raw_data[train_target_idx]
+            train_target_data = train_target_data.reshape((batch_size, window_size, feature_size))
             train_target_data = numpy.swapaxes(train_target_data, axis1=0, axis2=1)
 
             # tf update
@@ -444,7 +414,7 @@ def train_model(feature_size,
             gan_mse_list.append(gan_square_error)
 
             if train_batch_count%10==0:
-                print '==={}///sample length {}==='.format(model_name, window_size)
+                print '==={}_LENGTH{}==='.format(model_name, window_size)
                 print 'epoch {}, batch_cnt {} => TF  generator mse cost  {}'.format(e, train_batch_count, tf_mse_list[-1])
                 print 'epoch {}, batch_cnt {} => GAN generator mse cost  {}'.format(e, train_batch_count, gan_mse_list[-1])
                 print '----------------------------------------------------------'

@@ -79,7 +79,7 @@ def set_discriminator_output_model(hidden_size):
     layers.append(LinearLayer(input_dim=hidden_size,
                               output_dim=hidden_size/2,
                               name='discriminator_output_model_linear0'))
-    layers.append(Tanh(name='discriminator_output_model_tanh1'))
+    layers.append(Tanh(name='discriminator_output_model_tanh0'))
     layers.append(LinearLayer(input_dim=hidden_size/2,
                               output_dim=1,
                               name='discriminator_output_model_linear1'))

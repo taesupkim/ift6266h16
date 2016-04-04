@@ -305,11 +305,11 @@ def train_model(feature_size,
                                           generator_grad_clipping=.0,
                                           discriminator_grad_clipping=.0)
 
-    print 'COMPILING TF UPDATE FUNCTION '
-    tf_updater = set_tf_update_function(generator_rnn_model=generator_rnn_model,
-                                        generator_output_model=generator_output_model,
-                                        generator_optimizer=generator_tf_optimizer,
-                                        generator_grad_clipping=.0)
+    # print 'COMPILING TF UPDATE FUNCTION '
+    # tf_updater = set_tf_update_function(generator_rnn_model=generator_rnn_model,
+    #                                     generator_output_model=generator_output_model,
+    #                                     generator_optimizer=generator_tf_optimizer,
+    #                                     generator_grad_clipping=.0)
 
     # evaluator
     # print 'COMPILING EVALUATION FUNCTION '
@@ -504,8 +504,8 @@ if __name__=="__main__":
 
     # set optimizer
     tf_generator_optimizer      = RmsProp(learning_rate=0.0001).update_params
-    gan_generator_optimizer     = RmsProp(learning_rate=0.00001).update_params
-    gan_discriminator_optimizer = RmsProp(learning_rate=0.00001).update_params
+    gan_generator_optimizer     = RmsProp(learning_rate=0.01).update_params
+    gan_discriminator_optimizer = RmsProp(learning_rate=0.001).update_params
 
 
     train_model(feature_size=feature_size,

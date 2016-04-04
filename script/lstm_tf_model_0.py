@@ -382,7 +382,7 @@ def train_model(feature_size,
         window_size        = init_window_size + 5*e
         full_batch_size    = feature_size*batch_size*window_size
         last_batch_idx     = num_train_total_steps-(full_batch_size+feature_size)
-        train_batch_orders = np_rng.permutation(last_batch_idx+1)
+        train_batch_orders = np_rng.permutation(last_batch_idx)
 
         # for each batch
         for batch_idx, batch_start_idx in enumerate(train_batch_orders):

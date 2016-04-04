@@ -488,7 +488,7 @@ if __name__=="__main__":
     hidden_size   = 1000
     lr=1e-4
 
-    model_name = 'LSTM_GAN' \
+    model_name = 'LSTM_ONLY_GAN' \
                 + '_FEATURE{}'.format(int(feature_size)) \
                 + '_HIDDEN{}'.format(int(hidden_size)) \
 
@@ -503,9 +503,9 @@ if __name__=="__main__":
     discriminator_output_model = set_discriminator_output_model(hidden_size=hidden_size*2)
 
     # set optimizer
-    tf_generator_optimizer      = RmsProp(learning_rate=0.001).update_params
-    gan_generator_optimizer     = RmsProp(learning_rate=0.001).update_params
-    gan_discriminator_optimizer = RmsProp(learning_rate=0.001).update_params
+    tf_generator_optimizer      = RmsProp(learning_rate=0.0001).update_params
+    gan_generator_optimizer     = RmsProp(learning_rate=0.0001).update_params
+    gan_discriminator_optimizer = RmsProp(learning_rate=0.0001).update_params
 
 
     train_model(feature_size=feature_size,

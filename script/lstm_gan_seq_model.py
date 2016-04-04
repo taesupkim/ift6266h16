@@ -72,7 +72,7 @@ def set_discriminator_rnn_model(input_size,
     layers.append(SingleLstmLayer(input_dim=input_size,
                                   hidden_dim=hidden_size,
                                   name='discriminator_rnn_model'))
-    return
+    return layers
 
 def set_discriminator_output_model(hidden_size):
     layers = []

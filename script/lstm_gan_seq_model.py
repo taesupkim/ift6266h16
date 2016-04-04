@@ -34,7 +34,7 @@ def set_train_datastream(feature_size=16000,
     data_stream = Window(offset=feature_size,
                          source_window=window_size*feature_size,
                          target_window=window_size*feature_size,
-                         overlapping=True,
+                         overlapping=False,
                          data_stream=data_stream)
     return data_stream
 
@@ -110,10 +110,10 @@ def set_gan_update_function(generator_rnn_model,
 
     generator_sample = get_tensor_output(generator_hidden, generator_output_model, is_training=True)
 
-    generator_hidden = theano.gradient.disconnected_grad(generator_hidden)
+    condition_generator_hidden = theano.gradient.disconnected_grad(generator_hidden)
 
-    positive_pair = tensor.concatenate([generator_hidden, target_sequence], axis=2)
-    negative_pair = tensor.concatenate([generator_hidden, generator_sample], axis=2)
+    positive_pair = tensor.concatenate([condition_generator_hidden, target_sequence], axis=2)
+    negative_pair = tensor.concatenate([condition_generator_hidden, generator_sample], axis=2)
 
     # set generator input data list
     discriminator_input_data_list = [positive_pair,]
@@ -382,7 +382,7 @@ def train_model(feature_size,
         train_target_data = []
         for batch_idx, batch_data in enumerate(train_data_iterator):
             # skip the beginning part
-            if batch_idx<10000:
+            if batch_idx<1:
                 continue
 
             # init train batch data
@@ -418,10 +418,13 @@ def train_model(feature_size,
             train_target_data = (train_target_data/(1.15*2.**13)).astype(floatX)
 
             # tf update
-            tf_update_output = tf_updater(train_source_data,
-                                          train_target_data)
-            tf_square_error        = tf_update_output[0].mean()
-            tf_generator_grad_norm = tf_update_output[1]
+            # tf_update_output = tf_updater(train_source_data,
+            #                               train_target_data)
+            # tf_square_error        = tf_update_output[0].mean()
+            # tf_generator_grad_norm = tf_update_output[1]
+
+            tf_square_error        = 0.0
+            tf_generator_grad_norm = 0.0
 
             # gan update
             gan_update_output = gan_updater(train_source_data,

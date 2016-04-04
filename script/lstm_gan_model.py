@@ -540,7 +540,7 @@ if __name__=="__main__":
         # discriminator model
         discriminator_feature_model = set_discriminator_feature_model(hidden_size=hidden_size,
                                                                       feature_size=500)
-        discriminator_output_model = set_discriminator_output_model(feature_size=500*2)
+        discriminator_output_model = set_discriminator_output_model(feature_size=500)
 
         # set optimizer
         tf_generator_optimizer      = RmsProp(learning_rate=lr).update_params

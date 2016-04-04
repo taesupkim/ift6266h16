@@ -18,37 +18,6 @@ np_rng = RandomState(42)
 floatX = theano.config.floatX
 sampling_rate = 16000
 
-from fuel.datasets.hdf5 import H5PYDataset
-
-class YouTubeAudio(H5PYDataset):
-    def __init__(self, youtube_id, **kwargs):
-        super(YouTubeAudio, self).__init__(
-            file_or_path='/data/lisatmp4/taesup/data/YouTubeAudio/'+youtube_id+'.hdf5',
-            which_sets=('train',), **kwargs
-        )
-
-def set_train_datastream(feature_size=16000,
-                         window_size=100,
-                         youtube_id='XqaJ2Ol5cC4_train'):
-    data_stream = YouTubeAudio(youtube_id).get_example_stream()
-    data_stream = Window(offset=feature_size,
-                         source_window=window_size*feature_size,
-                         target_window=window_size*feature_size,
-                         overlapping=False,
-                         data_stream=data_stream)
-    return data_stream
-
-def set_valid_datastream(feature_size=16000,
-                         window_size=100,
-                         youtube_id='XqaJ2Ol5cC4_valid'):
-    data_stream = YouTubeAudio(youtube_id).get_example_stream()
-    data_stream = Window(offset=feature_size,
-                         source_window=window_size*feature_size,
-                         target_window=window_size*feature_size,
-                         overlapping=False,
-                         data_stream=data_stream)
-    return data_stream
-
 def set_generator_rnn_model(input_size,
                             hidden_size):
     layers = []
@@ -343,9 +312,9 @@ def train_model(feature_size,
                                         generator_grad_clipping=.0)
 
     # evaluator
-    print 'COMPILING EVALUATION FUNCTION '
-    evaluator = set_evaluation_function(generator_rnn_model=generator_rnn_model,
-                                        generator_output_model=generator_output_model)
+    # print 'COMPILING EVALUATION FUNCTION '
+    # evaluator = set_evaluation_function(generator_rnn_model=generator_rnn_model,
+    #                                     generator_output_model=generator_output_model)
 
     # sample generator
     print 'COMPILING SAMPLING FUNCTION '
@@ -364,6 +333,16 @@ def train_model(feature_size,
     num_valid_total_steps = valid_raw_data.shape[0]
     batch_size      = 64
 
+    num_samples      = 10
+    last_seq_idx     = num_valid_total_steps-feature_size
+    valid_seq_orders = np_rng.permutation(last_seq_idx)
+    valid_seq_orders = valid_seq_orders[:last_seq_idx-last_seq_idx%num_samples]
+    valid_seq_orders = valid_seq_orders.reshape((-1, num_samples))
+    valid_seq_orders = valid_seq_orders[0]
+    valid_source_idx  = valid_seq_orders.reshape((num_samples, 1)) + numpy.repeat(numpy.arange(feature_size).reshape((1, feature_size)), num_samples, axis=0)
+    valid_source_data = valid_raw_data[valid_source_idx]
+    valid_source_data = valid_source_data.reshape((num_samples, feature_size))
+
     print 'START TRAINING'
     # for each epoch
     tf_mse_list                = []
@@ -379,35 +358,35 @@ def train_model(feature_size,
 
     train_batch_count = 0
     for e in xrange(num_epochs):
-        window_size        = init_window_size + 5*e
-        full_batch_size    = feature_size*batch_size*window_size
-        last_batch_idx     = num_train_total_steps-(full_batch_size+feature_size)
-        train_batch_orders = np_rng.permutation(last_batch_idx+1)
+        window_size      = init_window_size + 5*e
+        sequence_size    = feature_size*window_size
+        last_seq_idx     = num_train_total_steps-(sequence_size+feature_size)
+        train_seq_orders = np_rng.permutation(last_seq_idx)
+        train_seq_orders = train_seq_orders[:last_seq_idx-last_seq_idx%batch_size]
+        train_seq_orders = train_seq_orders.reshape((-1, batch_size))
 
         # for each batch
-        for batch_idx, batch_start_idx in enumerate(train_batch_orders):
+        for batch_idx, batch_info in enumerate(train_seq_orders):
             # source data
-            batch_start_idx = batch_start_idx
-            batch_end_idx   = batch_start_idx + full_batch_size
-            train_source_data = train_raw_data[batch_start_idx:batch_end_idx]
-            train_source_data = train_source_data.reshape(batch_size, window_size, feature_size)
+            train_source_idx  = batch_info.reshape((batch_size, 1)) + numpy.repeat(numpy.arange(sequence_size).reshape((1, sequence_size)), batch_size, axis=0)
+            train_source_data = train_raw_data[train_source_idx]
+            train_source_data = train_source_data.reshape((batch_size, window_size, feature_size))
             train_source_data = numpy.swapaxes(train_source_data, axis1=0, axis2=1)
 
             # target data
-            batch_start_idx = batch_start_idx + feature_size
-            batch_end_idx   = batch_start_idx + full_batch_size
-            train_target_data = train_raw_data[batch_start_idx:batch_end_idx]
-            train_target_data = train_target_data.reshape(batch_size, window_size, feature_size)
+            train_target_idx  = train_source_idx + feature_size
+            train_target_data = train_raw_data[train_target_idx]
+            train_target_data = train_target_data.reshape((batch_size, window_size, feature_size))
             train_target_data = numpy.swapaxes(train_target_data, axis1=0, axis2=1)
 
             # tf update
-            # tf_update_output = tf_updater(source_data,
-            #                               target_data)
-            # tf_square_error        = tf_update_output[0].mean()
-            # tf_generator_grad_norm = tf_update_output[1]
+            tf_update_output = tf_updater(train_source_data,
+                                          train_target_data)
+            tf_square_error        = tf_update_output[0].mean()
+            tf_generator_grad_norm = tf_update_output[1]
 
-            tf_square_error        = 0.0
-            tf_generator_grad_norm = 0.0
+            # tf_square_error        = 0.0
+            # tf_generator_grad_norm = 0.0
 
             # gan update
             gan_update_output = gan_updater(train_source_data,
@@ -419,6 +398,13 @@ def train_model(feature_size,
             gan_square_error                 = gan_update_output[4].mean()
             gan_generator_grad_norm          = gan_update_output[5]
             gan_discriminator_grad_norm      = gan_update_output[6]
+            # generator_gan_cost               = 0.0
+            # discriminator_gan_cost           = 0.0
+            # discriminator_true_score         = 0.0
+            # discriminator_false_score        = 0.0
+            # gan_square_error                 = 0.0
+            # gan_generator_grad_norm          = 0.0
+            # gan_discriminator_grad_norm      = 0.0
 
             train_batch_count += 1
 
@@ -437,7 +423,7 @@ def train_model(feature_size,
             gan_mse_list.append(gan_square_error)
 
             if train_batch_count%10==0:
-                print '=============sample length {}============================='.format(window_size)
+                print '============{}_LENGTH{}============'.format(model_name, window_size)
                 print 'epoch {}, batch_cnt {} => TF  generator mse cost  {}'.format(e, train_batch_count, tf_mse_list[-1])
                 print 'epoch {}, batch_cnt {} => GAN generator mse cost  {}'.format(e, train_batch_count, gan_mse_list[-1])
                 print '----------------------------------------------------------'
@@ -475,26 +461,10 @@ def train_model(feature_size,
 
 
             if train_batch_count%100==0:
-                num_samples        = 10
-                full_batch_size    = feature_size
-                last_batch_idx     = num_valid_total_steps-full_batch_size
-                valid_batch_orders = np_rng.permutation(last_batch_idx+1)
-                valid_batch_orders = valid_batch_orders[:num_samples]
-
-                sampling_seed_data = []
-                for batch_idx, batch_start_idx in enumerate(valid_batch_orders):
-                    # source data
-                    batch_start_idx = batch_start_idx
-                    batch_end_idx   = batch_start_idx + full_batch_size
-
-                    sampling_seed_data.append(valid_raw_data[batch_start_idx:batch_end_idx])
-
-                sampling_seed_data = numpy.asarray(sampling_seed_data, dtype=floatX)
-
                 num_sec = 10
                 sampling_length = num_sec*sampling_rate/feature_size
 
-                curr_input_data  = sampling_seed_data.reshape(num_samples, feature_size)
+                curr_input_data  = valid_source_data
                 prev_hidden_data = np_rng.normal(size=(num_samples, hidden_size)).astype(floatX)
                 prev_hidden_data = numpy.tanh(prev_hidden_data)
                 prev_cell_data   = np_rng.normal(size=(num_samples, hidden_size)).astype(floatX)
@@ -518,9 +488,9 @@ if __name__=="__main__":
     hidden_size   = 1000
     lr=1e-4
 
-    model_name = 'lstm_gan_seq' \
+    model_name = 'LSTM_TF+GAN' \
                 + '_FEATURE{}'.format(int(feature_size)) \
-                 + '_HIDDEN{}'.format(int(hidden_size)) \
+                + '_HIDDEN{}'.format(int(hidden_size)) \
 
     # generator model
     generator_rnn_model    = set_generator_rnn_model(input_size=feature_size,
@@ -533,9 +503,9 @@ if __name__=="__main__":
     discriminator_output_model = set_discriminator_output_model(hidden_size=hidden_size*2)
 
     # set optimizer
-    tf_generator_optimizer      = RmsProp(learning_rate=lr).update_params
+    tf_generator_optimizer      = RmsProp(learning_rate=0.001).update_params
     gan_generator_optimizer     = RmsProp(learning_rate=0.001).update_params
-    gan_discriminator_optimizer = RmsProp(learning_rate=0.01).update_params
+    gan_discriminator_optimizer = RmsProp(learning_rate=0.001).update_params
 
 
     train_model(feature_size=feature_size,

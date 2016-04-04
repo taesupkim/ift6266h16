@@ -543,7 +543,7 @@ def train_model(feature_size,
 if __name__=="__main__":
     feature_size  = 1600
     hidden_size   = 1000
-    lr=1e-5
+    lr=1e-4
 
     model_name = 'lstm_gan' \
                 + '_FEATURE{}'.format(int(feature_size)) \

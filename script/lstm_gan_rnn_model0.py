@@ -332,7 +332,10 @@ def train_model(feature_size,
                 discriminator_optimizer,
                 num_epochs,
                 model_name):
-
+    input_emb_param = theano.shared(value=normal_weight(input_dim=feature_size,
+                                                        output_dim=hidden_size,
+                                                        scale=2./feature_size),
+                                    name='input_embedding')
     # generator updater
     print 'COMPILING GAN UPDATE FUNCTION '
     gan_updater = set_gan_update_function(input_emb_param=input_emb_param,
@@ -344,10 +347,6 @@ def train_model(feature_size,
                                           discriminator_optimizer=discriminator_optimizer,
                                           generator_grad_clipping=.0,
                                           discriminator_grad_clipping=.0)
-    input_emb_param = theano.shared(value=normal_weight(input_dim=feature_size,
-                                                        output_dim=hidden_size,
-                                                        scale=2./feature_size),
-                                    name='input_embedding')
 
     print 'COMPILING TF UPDATE FUNCTION '
     tf_updater = set_tf_update_function(input_emb_param=input_emb_param,

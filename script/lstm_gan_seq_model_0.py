@@ -425,8 +425,6 @@ def train_model(feature_size,
             if train_batch_count%10==0:
                 print '============{}_LENGTH{}============'.format(model_name, window_size)
                 # print 'epoch {}, batch_cnt {} => TF  generator mse cost  {}'.format(e, train_batch_count, tf_mse_list[-1])
-                print 'epoch {}, batch_cnt {} => GAN generator mse cost  {}'.format(e, train_batch_count, gan_mse_list[-1])
-                print '----------------------------------------------------------'
                 print 'epoch {}, batch_cnt {} => GAN generator     cost  {}'.format(e, train_batch_count, gan_generator_cost_list[-1])
                 print 'epoch {}, batch_cnt {} => GAN discriminator cost  {}'.format(e, train_batch_count, gan_discriminator_cost_list[-1])
                 print '----------------------------------------------------------'
@@ -435,6 +433,8 @@ def train_model(feature_size,
                 print '----------------------------------------------------------'
                 print 'epoch {}, batch_cnt {} => GAN discrim.  grad norm {}'.format(e, train_batch_count, gan_discriminator_grad_list[-1])
                 print 'epoch {}, batch_cnt {} => GAN generator grad norm {}'.format(e, train_batch_count, gan_generator_grad_list[-1])
+                print '----------------------------------------------------------'
+                print 'epoch {}, batch_cnt {} => GAN generator mse cost  {}'.format(e, train_batch_count, gan_mse_list[-1])
                 # print '----------------------------------------------------------'
                 # print 'epoch {}, batch_cnt {} => TF  generator grad norm {}'.format(e, train_batch_count, tf_generator_grad_list[-1])
 
@@ -504,8 +504,8 @@ if __name__=="__main__":
 
     # set optimizer
     tf_generator_optimizer      = RmsProp(learning_rate=0.0001).update_params
-    gan_generator_optimizer     = RmsProp(learning_rate=0.0001).update_params
-    gan_discriminator_optimizer = RmsProp(learning_rate=0.0001).update_params
+    gan_generator_optimizer     = RmsProp(learning_rate=0.01).update_params
+    gan_discriminator_optimizer = RmsProp(learning_rate=0.01).update_params
 
 
     train_model(feature_size=feature_size,

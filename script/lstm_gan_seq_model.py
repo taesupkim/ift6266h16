@@ -518,7 +518,7 @@ if __name__=="__main__":
     hidden_size   = 1000
     lr=1e-4
 
-    model_name = 'lstm_gan' \
+    model_name = 'lstm_gan_seq' \
                 + '_FEATURE{}'.format(int(feature_size)) \
                  + '_HIDDEN{}'.format(int(hidden_size)) \
 
@@ -534,8 +534,8 @@ if __name__=="__main__":
 
     # set optimizer
     tf_generator_optimizer      = RmsProp(learning_rate=lr).update_params
-    gan_generator_optimizer     = RmsProp(learning_rate=lr).update_params
-    gan_discriminator_optimizer = RmsProp(learning_rate=lr).update_params
+    gan_generator_optimizer     = RmsProp(learning_rate=0.01).update_params
+    gan_discriminator_optimizer = RmsProp(learning_rate=0.01).update_params
 
 
     train_model(feature_size=feature_size,

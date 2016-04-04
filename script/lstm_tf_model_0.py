@@ -333,6 +333,16 @@ def train_model(feature_size,
     num_valid_total_steps = valid_raw_data.shape[0]
     batch_size      = 64
 
+    num_samples      = 10
+    last_seq_idx     = num_valid_total_steps-feature_size
+    valid_seq_orders = np_rng.permutation(last_seq_idx)
+    valid_seq_orders = valid_seq_orders[:last_seq_idx-last_seq_idx%num_samples]
+    valid_seq_orders = valid_seq_orders.reshape((-1, num_samples))
+    valid_seq_orders = valid_seq_orders[0]
+    valid_source_idx  = valid_seq_orders.reshape((num_samples, 1)) + numpy.repeat(numpy.arange(feature_size).reshape((1, feature_size)), num_samples, axis=0)
+    valid_source_data = valid_raw_data[valid_source_idx]
+    valid_source_data = valid_source_data.reshape((num_samples, feature_size))
+
     print 'START TRAINING'
     # for each epoch
     tf_mse_list                = []
@@ -354,7 +364,6 @@ def train_model(feature_size,
         train_seq_orders = np_rng.permutation(last_seq_idx)
         train_seq_orders = train_seq_orders[:last_seq_idx-last_seq_idx%batch_size]
         train_seq_orders = train_seq_orders.reshape((-1, batch_size))
-
 
         # for each batch
         for batch_idx, batch_info in enumerate(train_seq_orders):
@@ -414,19 +423,19 @@ def train_model(feature_size,
             gan_mse_list.append(gan_square_error)
 
             if train_batch_count%10==0:
-                print '==={}_LENGTH{}==='.format(model_name, window_size)
+                print '============{}_LENGTH{}============'.format(model_name, window_size)
                 print 'epoch {}, batch_cnt {} => TF  generator mse cost  {}'.format(e, train_batch_count, tf_mse_list[-1])
-                print 'epoch {}, batch_cnt {} => GAN generator mse cost  {}'.format(e, train_batch_count, gan_mse_list[-1])
-                print '----------------------------------------------------------'
-                print 'epoch {}, batch_cnt {} => GAN generator     cost  {}'.format(e, train_batch_count, gan_generator_cost_list[-1])
-                print 'epoch {}, batch_cnt {} => GAN discriminator cost  {}'.format(e, train_batch_count, gan_discriminator_cost_list[-1])
-                print '----------------------------------------------------------'
-                print 'epoch {}, batch_cnt {} => GAN input score         {}'.format(e, train_batch_count, gan_true_score_list[-1])
-                print 'epoch {}, batch_cnt {} => GAN sample score        {}'.format(e, train_batch_count, gan_false_score_list[-1])
-                print '----------------------------------------------------------'
-                print 'epoch {}, batch_cnt {} => GAN discrim.  grad norm {}'.format(e, train_batch_count, gan_discriminator_grad_list[-1])
-                print 'epoch {}, batch_cnt {} => GAN generator grad norm {}'.format(e, train_batch_count, gan_generator_grad_list[-1])
-                print '----------------------------------------------------------'
+                # print 'epoch {}, batch_cnt {} => GAN generator mse cost  {}'.format(e, train_batch_count, gan_mse_list[-1])
+                # print '----------------------------------------------------------'
+                # print 'epoch {}, batch_cnt {} => GAN generator     cost  {}'.format(e, train_batch_count, gan_generator_cost_list[-1])
+                # print 'epoch {}, batch_cnt {} => GAN discriminator cost  {}'.format(e, train_batch_count, gan_discriminator_cost_list[-1])
+                # print '----------------------------------------------------------'
+                # print 'epoch {}, batch_cnt {} => GAN input score         {}'.format(e, train_batch_count, gan_true_score_list[-1])
+                # print 'epoch {}, batch_cnt {} => GAN sample score        {}'.format(e, train_batch_count, gan_false_score_list[-1])
+                # print '----------------------------------------------------------'
+                # print 'epoch {}, batch_cnt {} => GAN discrim.  grad norm {}'.format(e, train_batch_count, gan_discriminator_grad_list[-1])
+                # print 'epoch {}, batch_cnt {} => GAN generator grad norm {}'.format(e, train_batch_count, gan_generator_grad_list[-1])
+                # print '----------------------------------------------------------'
                 print 'epoch {}, batch_cnt {} => TF  generator grad norm {}'.format(e, train_batch_count, tf_generator_grad_list[-1])
 
 
@@ -452,26 +461,10 @@ def train_model(feature_size,
 
 
             if train_batch_count%100==0:
-                num_samples        = 10
-                full_batch_size    = feature_size
-                last_batch_idx     = num_valid_total_steps-full_batch_size
-                valid_batch_orders = np_rng.permutation(last_batch_idx+1)
-                valid_batch_orders = valid_batch_orders[:num_samples]
-
-                sampling_seed_data = []
-                for batch_idx, batch_start_idx in enumerate(valid_batch_orders):
-                    # source data
-                    batch_start_idx = batch_start_idx
-                    batch_end_idx   = batch_start_idx + full_batch_size
-
-                    sampling_seed_data.append(valid_raw_data[batch_start_idx:batch_end_idx])
-
-                sampling_seed_data = numpy.asarray(sampling_seed_data, dtype=floatX)
-
                 num_sec = 10
                 sampling_length = num_sec*sampling_rate/feature_size
 
-                curr_input_data  = sampling_seed_data.reshape(num_samples, feature_size)
+                curr_input_data  = valid_source_data
                 prev_hidden_data = np_rng.normal(size=(num_samples, hidden_size)).astype(floatX)
                 prev_hidden_data = numpy.tanh(prev_hidden_data)
                 prev_cell_data   = np_rng.normal(size=(num_samples, hidden_size)).astype(floatX)

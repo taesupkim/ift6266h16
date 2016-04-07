@@ -35,6 +35,7 @@ def set_generator_output_model(hidden_size,
     layers.append(LinearLayer(input_dim=hidden_size,
                               output_dim=input_size,
                               name='generator_output_model_linear'))
+    layers.append(Tanh(name='generator_output_model_tanh'))
     return layers
 
 def set_discriminator_rnn_model(input_size,
@@ -546,7 +547,7 @@ if __name__=="__main__":
     discriminator_output_model = set_discriminator_output_model(hidden_size=hidden_size)
 
     # set optimizer
-    tf_generator_optimizer      = RmsProp(learning_rate=0.0001).update_params
+    tf_generator_optimizer      = RmsProp(learning_rate=0.001).update_params
     gan_generator_optimizer     = RmsProp(learning_rate=0.001).update_params
     gan_discriminator_optimizer = RmsProp(learning_rate=0.001).update_params
 

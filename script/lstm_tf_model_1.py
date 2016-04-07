@@ -87,7 +87,6 @@ def set_gan_update_function(input_emb_param,
 
     generator_emb_sequence = get_tensor_output(generator_hidden, generator_output_model, is_training=True)
     generator_sequence     = tensor.dot(generator_emb_sequence, tensor.transpose(input_emb_param))
-    generator_sequence     = tensor.tanh(generator_sequence)
 
     condition_generator_hidden = theano.gradient.disconnected_grad(generator_hidden)
 
@@ -195,7 +194,6 @@ def set_tf_update_function(input_emb_param,
 
     generator_emb_sequence = get_tensor_output(generator_hidden, generator_output_model, is_training=True)
     generator_sequence     = tensor.dot(generator_emb_sequence, tensor.transpose(input_emb_param))
-    generator_sequence     = tensor.tanh(generator_sequence)
 
     # get square error
     square_error = tensor.sqr(target_sequence-generator_sequence).sum(axis=2)
@@ -255,7 +253,6 @@ def set_evaluation_function(input_emb_param,
 
     generator_emb_sequence = get_tensor_output(generator_hidden, generator_output_model, is_training=True)
     generator_sequence     = tensor.dot(generator_emb_sequence, tensor.transpose(input_emb_param))
-    generator_sequence     = tensor.tanh(generator_sequence)
 
     # get square error
     square_error = tensor.sqr(target_sequence-generator_sequence).sum(axis=2)
@@ -305,7 +302,6 @@ def set_sample_function(input_emb_param,
 
     generator_emb_sequence = get_tensor_output(generator_hidden, generator_output_model, is_training=False)
     generator_sequence     = tensor.dot(generator_emb_sequence, tensor.transpose(input_emb_param))
-    generator_sequence     = tensor.tanh(generator_sequence)
 
     # input data
     sample_function_inputs  = [init_input_data,
@@ -535,7 +531,7 @@ if __name__=="__main__":
     hidden_size   =  512
     lr=1e-4
 
-    model_name = 'LSTM_TF_LINEAR_MAP' \
+    model_name = 'LSTM_TF_LINEAR_MAP(NO TANH)' \
                 + '_FEATURE{}'.format(int(feature_size)) \
                 + '_HIDDEN{}'.format(int(hidden_size)) \
 

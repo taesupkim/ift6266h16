@@ -474,7 +474,7 @@ def train_model(feature_size,
 
 if __name__=="__main__":
     feature_size  = 1600
-    hidden_size   = 1000
+    hidden_size   =  800
     lr=1e-4
 
     model_name = 'LSTM_GAN_HIDDEN_FF' \
@@ -487,8 +487,8 @@ if __name__=="__main__":
 
     # discriminator model
     discriminator_feature_model = set_discriminator_feature_model(hidden_size=hidden_size,
-                                                                  feature_size=500)
-    discriminator_output_model = set_discriminator_output_model(feature_size=500)
+                                                                  feature_size=256)
+    discriminator_output_model = set_discriminator_output_model(feature_size=256)
 
     # set optimizer
     tf_generator_optimizer      = RmsProp(learning_rate=0.001).update_params

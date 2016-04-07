@@ -531,7 +531,7 @@ if __name__=="__main__":
     hidden_size   =  512
     lr=1e-4
 
-    model_name = 'LSTM_TF_LINEAR_MAP(NO TANH)' \
+    model_name = 'LSTM_TF_LINEAR_MAP(NO_TANH,LR1E_02)' \
                 + '_FEATURE{}'.format(int(feature_size)) \
                 + '_HIDDEN{}'.format(int(hidden_size)) \
 
@@ -546,7 +546,7 @@ if __name__=="__main__":
     discriminator_output_model = set_discriminator_output_model(hidden_size=hidden_size)
 
     # set optimizer
-    tf_generator_optimizer      = RmsProp(learning_rate=0.001).update_params
+    tf_generator_optimizer      = RmsProp(learning_rate=0.01).update_params
     gan_generator_optimizer     = RmsProp(learning_rate=0.001).update_params
     gan_discriminator_optimizer = RmsProp(learning_rate=0.001).update_params
 

@@ -491,7 +491,7 @@ if __name__=="__main__":
     discriminator_output_model = set_discriminator_output_model(feature_size=256)
 
     # set optimizer
-    tf_generator_optimizer      = RmsProp(learning_rate=0.001).update_params
+    tf_generator_optimizer      = RmsProp(learning_rate=0.01).update_params
     gan_generator_optimizer     = RmsProp(learning_rate=0.001).update_params
     gan_discriminator_optimizer = RmsProp(learning_rate=0.001).update_params
 

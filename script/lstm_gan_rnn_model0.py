@@ -35,7 +35,7 @@ def set_generator_output_model(hidden_size,
     layers.append(LinearLayer(input_dim=hidden_size,
                               output_dim=input_size,
                               name='generator_output_model_linear'))
-    layers.append(Tanh(name='generator_output_model_tanh'))
+    layers.append(Logistic(name='generator_output_model_tanh'))
     return layers
 
 def set_discriminator_rnn_model(input_size,

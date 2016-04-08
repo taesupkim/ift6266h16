@@ -204,7 +204,8 @@ def set_tf_update_function(input_emb_param,
     tf_updates_dict = get_model_and_params_updates(layers=generator_rnn_model+generator_output_model,
                                                    params=[input_emb_param,],
                                                    cost=tf_updates_cost,
-                                                   optimizer=generator_optimizer)
+                                                   optimizer=generator_optimizer,
+                                                   use_grad_clip=generator_grad_clipping)
 
     generator_gradient_dict  = get_model_and_params_gradients(layers=generator_rnn_model+generator_output_model,
                                                               params=[input_emb_param,],

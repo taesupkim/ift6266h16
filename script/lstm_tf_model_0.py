@@ -444,20 +444,20 @@ def train_model(feature_size,
                            arr=numpy.asarray(tf_mse_list))
                 numpy.save(file=model_name+'tf_gen_grad',
                            arr=numpy.asarray(tf_generator_grad_list))
-                numpy.save(file=model_name+'gan_mse',
-                           arr=numpy.asarray(gan_mse_list))
-                numpy.save(file=model_name+'gan_gen_cost',
-                           arr=numpy.asarray(gan_generator_cost_list))
-                numpy.save(file=model_name+'gan_disc_cost',
-                           arr=numpy.asarray(gan_true_score_list))
-                numpy.save(file=model_name+'gan_input_score',
-                           arr=numpy.asarray(gan_true_score_list))
-                numpy.save(file=model_name+'gan_sample_score',
-                           arr=numpy.asarray(gan_false_score_list))
-                numpy.save(file=model_name+'gan_gen_grad',
-                           arr=numpy.asarray(gan_generator_grad_list))
-                numpy.save(file=model_name+'gan_disc_grad',
-                           arr=numpy.asarray(gan_discriminator_grad_list))
+                # numpy.save(file=model_name+'gan_mse',
+                #            arr=numpy.asarray(gan_mse_list))
+                # numpy.save(file=model_name+'gan_gen_cost',
+                #            arr=numpy.asarray(gan_generator_cost_list))
+                # numpy.save(file=model_name+'gan_disc_cost',
+                #            arr=numpy.asarray(gan_true_score_list))
+                # numpy.save(file=model_name+'gan_input_score',
+                #            arr=numpy.asarray(gan_true_score_list))
+                # numpy.save(file=model_name+'gan_sample_score',
+                #            arr=numpy.asarray(gan_false_score_list))
+                # numpy.save(file=model_name+'gan_gen_grad',
+                #            arr=numpy.asarray(gan_generator_grad_list))
+                # numpy.save(file=model_name+'gan_disc_grad',
+                #            arr=numpy.asarray(gan_discriminator_grad_list))
 
 
             if train_batch_count%100==0:

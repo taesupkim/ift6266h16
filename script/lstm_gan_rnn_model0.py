@@ -35,7 +35,7 @@ def set_generator_output_model(hidden_size,
     layers.append(LinearLayer(input_dim=hidden_size,
                               output_dim=input_size,
                               name='generator_output_model_linear'))
-    layers.append(Logistic(name='generator_output_model_tanh'))
+    layers.append(Tanh(name='generator_output_model_tanh'))
     return layers
 
 def set_discriminator_rnn_model(input_size,
@@ -524,7 +524,7 @@ def train_model(feature_size,
 
 if __name__=="__main__":
     feature_size  = 1600
-    hidden_size   =  512
+    hidden_size   =  800
     lr=1e-4
 
     model_name = 'LSTM_TF_GAN(RNN)_LINEAR_MAP' \

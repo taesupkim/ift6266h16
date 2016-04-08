@@ -65,7 +65,7 @@ def set_gan_update_function(generator_model,
     target_sequence  = tensor.tensor3(name='target_sequence',
                                       dtype=floatX)
     # set generator input data list
-    generator_input_data_list = [input_sequence,]
+    generator_input_data_list = [input_sequence, 1]
 
     # get generator output data
     generator_output = generator_model[0].forward(generator_input_data_list, is_training=True)
@@ -75,18 +75,33 @@ def set_gan_update_function(generator_model,
     model_hidden     = generator_output[3]
     model_cell       = generator_output[4]
 
-    condition_cell    = data_cell[:-1]
-    condition_cell    = theano.gradient.disconnected_grad(condition_cell)
-    condition_feature = get_tensor_output(condition_cell,
+    # condition_cell    = data_cell[:-1]
+    # condition_cell    = theano.gradient.disconnected_grad(condition_cell)
+    # condition_feature = get_tensor_output(condition_cell,
+    #                                       discriminator_feature_model,
+    #                                       is_training=True)
+    #
+    # positive_cell    = data_cell[1:]
+    # positive_feature = get_tensor_output(positive_cell,
+    #                                      discriminator_feature_model,
+    #                                      is_training=True)
+    # negative_cell    = model_cell[1:]
+    # negative_feature = get_tensor_output(negative_cell,
+    #                                      discriminator_feature_model,
+    #                                      is_training=True)
+
+    condition_hid    = data_hidden[:-1]
+    condition_hid    = theano.gradient.disconnected_grad(condition_hid)
+    condition_feature = get_tensor_output(condition_hid,
                                           discriminator_feature_model,
                                           is_training=True)
 
-    positive_cell    = data_cell[1:]
-    positive_feature = get_tensor_output(positive_cell,
+    positive_hid     = data_hidden[1:]
+    positive_feature = get_tensor_output(positive_hid,
                                          discriminator_feature_model,
                                          is_training=True)
-    negative_cell    = model_cell[1:]
-    negative_feature = get_tensor_output(negative_cell,
+    negative_hid     = model_hidden[1:]
+    negative_feature = get_tensor_output(negative_hid,
                                          discriminator_feature_model,
                                          is_training=True)
 
@@ -459,10 +474,10 @@ def train_model(feature_size,
 
 if __name__=="__main__":
     feature_size  = 1600
-    hidden_size   = 1000
+    hidden_size   =  800
     lr=1e-4
 
-    model_name = 'LSTM_GAN_CELL_FF' \
+    model_name = 'LSTM_GAN_HIDDEN_FF(TRUNC)' \
                 + '_FEATURE{}'.format(int(feature_size)) \
                 + '_HIDDEN{}'.format(int(hidden_size)) \
 
@@ -472,13 +487,13 @@ if __name__=="__main__":
 
     # discriminator model
     discriminator_feature_model = set_discriminator_feature_model(hidden_size=hidden_size,
-                                                                  feature_size=500)
-    discriminator_output_model = set_discriminator_output_model(feature_size=500)
+                                                                  feature_size=256)
+    discriminator_output_model = set_discriminator_output_model(feature_size=256)
 
     # set optimizer
     tf_generator_optimizer      = RmsProp(learning_rate=0.001).update_params
     gan_generator_optimizer     = RmsProp(learning_rate=0.001).update_params
-    gan_discriminator_optimizer = RmsProp(learning_rate=0.001).update_params
+    gan_discriminator_optimizer = RmsProp(learning_rate=0.0001).update_params
 
 
     train_model(feature_size=feature_size,

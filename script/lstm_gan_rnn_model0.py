@@ -35,6 +35,7 @@ def set_generator_output_model(hidden_size,
     layers.append(LinearLayer(input_dim=hidden_size,
                               output_dim=input_size,
                               name='generator_output_model_linear'))
+    layers.append(Tanh(name='generator_output_model_tanh'))
     return layers
 
 def set_discriminator_rnn_model(input_size,
@@ -83,7 +84,6 @@ def set_gan_update_function(input_emb_param,
 
     generator_emb_sequence = get_tensor_output(generator_hidden, generator_output_model, is_training=True)
     generator_sequence     = tensor.dot(generator_emb_sequence, tensor.transpose(input_emb_param))
-    generator_sequence     = tensor.tanh(generator_sequence)
 
     condition_generator_hidden = theano.gradient.disconnected_grad(generator_hidden)
 
@@ -191,7 +191,6 @@ def set_tf_update_function(input_emb_param,
 
     generator_emb_sequence = get_tensor_output(generator_hidden, generator_output_model, is_training=True)
     generator_sequence     = tensor.dot(generator_emb_sequence, tensor.transpose(input_emb_param))
-    generator_sequence     = tensor.tanh(generator_sequence)
 
     # get square error
     square_error = tensor.sqr(target_sequence-generator_sequence).sum(axis=2)
@@ -251,7 +250,6 @@ def set_evaluation_function(input_emb_param,
 
     generator_emb_sequence = get_tensor_output(generator_hidden, generator_output_model, is_training=True)
     generator_sequence     = tensor.dot(generator_emb_sequence, tensor.transpose(input_emb_param))
-    generator_sequence     = tensor.tanh(generator_sequence)
 
     # get square error
     square_error = tensor.sqr(target_sequence-generator_sequence).sum(axis=2)
@@ -301,7 +299,6 @@ def set_sample_function(input_emb_param,
 
     generator_emb_sequence = get_tensor_output(generator_hidden, generator_output_model, is_training=False)
     generator_sequence     = tensor.dot(generator_emb_sequence, tensor.transpose(input_emb_param))
-    generator_sequence     = tensor.tanh(generator_sequence)
 
     # input data
     sample_function_inputs  = [init_input_data,

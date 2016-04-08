@@ -485,7 +485,7 @@ def train_model(feature_size,
 
 if __name__=="__main__":
     feature_size  = 1600
-    hidden_size   = 1000
+    hidden_size   =  800
     lr=1e-4
 
     model_name = 'LSTM_TF' \

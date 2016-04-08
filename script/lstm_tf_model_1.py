@@ -352,7 +352,7 @@ def train_model(feature_size,
                                         generator_rnn_model=generator_rnn_model,
                                         generator_output_model=generator_output_model,
                                         generator_optimizer=generator_tf_optimizer,
-                                        generator_grad_clipping=40.0)
+                                        generator_grad_clipping=0.0)
 
     # evaluator
     # print 'COMPILING EVALUATION FUNCTION '
@@ -530,10 +530,10 @@ def train_model(feature_size,
 
 if __name__=="__main__":
     feature_size  = 1600
-    hidden_size   =  512
+    hidden_size   =  800
     lr=1e-4
 
-    model_name = 'LSTM_TF_LINEAR_MAP(NO_TANH,LR1E_04, CLIP40)' \
+    model_name = 'LSTM_TF_LINEAR_MAP(LR1E_03)' \
                 + '_FEATURE{}'.format(int(feature_size)) \
                 + '_HIDDEN{}'.format(int(hidden_size)) \
 

@@ -524,7 +524,7 @@ def train_model(feature_size,
 
 if __name__=="__main__":
     feature_size  = 160
-    hidden_size   = 128
+    hidden_size   = 80
     lr=1e-4
 
     model_name = 'LSTM_TF_GAN(RNN)_LINEAR_MAP' \

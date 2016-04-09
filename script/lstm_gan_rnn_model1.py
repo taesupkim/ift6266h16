@@ -58,7 +58,7 @@ def set_gan_update_function(generator_rnn_model,
                                      dtype=floatX)
 
     time_length = tensor.scalar(name='time_length',
-                                dtype=floatX)
+                                dtype='int32')
 
     # get init data for looping
     generator_output = generator_rnn_model[0].loop_forward([input_sequence[0], time_length])
@@ -232,7 +232,7 @@ def set_sample_function(generator_rnn_model):
                                      dtype=floatX)
 
     time_length = tensor.scalar(name='time_length',
-                                dtype=floatX)
+                                dtype='int32')
 
     # get init data for looping
     generator_output = generator_rnn_model[0].loop_forward([input_sequence[0], time_length])

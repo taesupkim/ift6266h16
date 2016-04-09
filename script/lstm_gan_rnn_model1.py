@@ -61,7 +61,7 @@ def set_gan_update_function(generator_rnn_model,
                                 dtype=floatX)
 
     # get init data for looping
-    generator_output = generator_rnn_model[0].loop_foward([input_sequence[0], time_length], is_training=True)
+    generator_output = generator_rnn_model[0].loop_forward([input_sequence[0], time_length], is_training=True)
     generator_sequence    = generator_output[0]
     generator_rand_update = generator_output[-1]
 
@@ -235,7 +235,7 @@ def set_sample_function(generator_rnn_model):
                                 dtype=floatX)
 
     # get init data for looping
-    generator_output = generator_rnn_model[0].loop_foward([input_sequence[0], time_length], is_training=True)
+    generator_output = generator_rnn_model[0].loop_forward([input_sequence[0], time_length], is_training=True)
     generator_sequence    = generator_output[0]
     generator_rand_update = generator_output[-1]
 

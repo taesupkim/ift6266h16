@@ -521,7 +521,7 @@ if __name__=="__main__":
 
     # set optimizer
     tf_generator_optimizer      = RmsProp(learning_rate=0.001).update_params
-    gan_generator_optimizer     = RmsProp(learning_rate=0.001).update_paramss
+    gan_generator_optimizer     = RmsProp(learning_rate=0.001).update_params
     gan_discriminator_optimizer = AdaGrad(learning_rate=0.001).update_params
 
 

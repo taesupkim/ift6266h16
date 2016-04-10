@@ -34,7 +34,7 @@ def set_discriminator_feature_model(hidden_size,
                               name='discriminator_feature_linear0'))
     layers.append(Relu(name='discriminator_feature_relu0'))
     layers.append(LinearLayer(input_dim=hidden_size/2,
-                              output_dim=feature_size/4,
+                              output_dim=hidden_size/4,
                               name='discriminator_feature_linear1'))
     layers.append(Relu(name='discriminator_feature_relu1'))
     layers.append(LinearLayer(input_dim=hidden_size/4,

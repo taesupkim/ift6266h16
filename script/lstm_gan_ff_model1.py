@@ -8,6 +8,7 @@ from layer.activations import Tanh, Logistic, Relu
 from layer.layers import LinearLayer, SingleLstmGanForceLayer, SingleLstmLayer
 from layer.layer_utils import get_tensor_output, get_model_updates, get_model_gradients
 from optimizer.rmsprop import RmsProp
+from optimizer.adagrad import AdaGrad
 from numpy.random import RandomState
 from theano.sandbox.rng_mrg import MRG_RandomStreams
 from scipy.io import wavfile
@@ -500,8 +501,8 @@ if __name__=="__main__":
 
     # set optimizer
     tf_generator_optimizer      = RmsProp(learning_rate=0.001).update_params
-    gan_generator_optimizer     = RmsProp(learning_rate=0.001).update_params
-    gan_discriminator_optimizer = RmsProp(learning_rate=0.001).update_params
+    gan_generator_optimizer     = AdaGrad(learning_rate=0.01).update_params
+    gan_discriminator_optimizer = AdaGrad(learning_rate=0.001).update_params
 
 
     train_model(feature_size=feature_size,

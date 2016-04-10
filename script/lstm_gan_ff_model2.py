@@ -11,6 +11,7 @@ from layer.layer_utils import (get_tensor_output, get_model_updates,
                                get_model_and_params_updates,
                                get_model_and_params_gradients)
 from optimizer.rmsprop import RmsProp
+from optimizer.adagrad import AdaGrad
 from numpy.random import RandomState
 from theano.sandbox.rng_mrg import MRG_RandomStreams
 from scipy.io import wavfile
@@ -505,7 +506,7 @@ if __name__=="__main__":
     hidden_size   =  800
     lr=1e-4
 
-    model_name = 'LSTM_GAN_HIDDEN_FF(TRUNC_LINEAR_EMB)' \
+    model_name = 'LSTM_GAN_HIDDEN_FF(TRUNC_LINEAR_EMB_ADAGRAD)' \
                 + '_FEATURE{}'.format(int(feature_size)) \
                 + '_HIDDEN{}'.format(int(hidden_size)) \
 
@@ -520,8 +521,8 @@ if __name__=="__main__":
 
     # set optimizer
     tf_generator_optimizer      = RmsProp(learning_rate=0.001).update_params
-    gan_generator_optimizer     = RmsProp(learning_rate=0.001).update_params
-    gan_discriminator_optimizer = RmsProp(learning_rate=0.0001).update_params
+    gan_generator_optimizer     = RmsProp(learning_rate=0.001).update_paramss
+    gan_discriminator_optimizer = AdaGrad(learning_rate=0.001).update_params
 
 
     train_model(feature_size=feature_size,

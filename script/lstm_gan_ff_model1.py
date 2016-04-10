@@ -34,9 +34,13 @@ def set_discriminator_feature_model(hidden_size,
                               name='discriminator_feature_linear0'))
     layers.append(Relu(name='discriminator_feature_relu0'))
     layers.append(LinearLayer(input_dim=hidden_size/2,
-                              output_dim=feature_size,
+                              output_dim=feature_size/4,
                               name='discriminator_feature_linear1'))
     layers.append(Relu(name='discriminator_feature_relu1'))
+    layers.append(LinearLayer(input_dim=hidden_size/4,
+                              output_dim=feature_size,
+                              name='discriminator_feature_linear2'))
+    layers.append(Relu(name='discriminator_feature_relu2'))
     return layers
 
 def set_discriminator_output_model(feature_size):
@@ -46,9 +50,13 @@ def set_discriminator_output_model(feature_size):
                               name='discriminator_output_linear0'))
     layers.append(Relu(name='discriminator_output_relu0'))
     layers.append(LinearLayer(input_dim=feature_size,
-                              output_dim=1,
+                              output_dim=feature_size/2,
                               name='discriminator_output_linear1'))
-    layers.append(Logistic(name='discriminator_output_linear1'))
+    layers.append(Relu(name='discriminator_output_relu1'))
+    layers.append(LinearLayer(input_dim=feature_size/2,
+                              output_dim=1,
+                              name='discriminator_output_linear2'))
+    layers.append(Logistic(name='discriminator_output_linear2'))
     return layers
 
 def set_gan_update_function(generator_model,
@@ -65,7 +73,7 @@ def set_gan_update_function(generator_model,
     target_sequence  = tensor.tensor3(name='target_sequence',
                                       dtype=floatX)
     # set generator input data list
-    generator_input_data_list = [input_sequence,]
+    generator_input_data_list = [input_sequence, 1]
 
     # get generator output data
     generator_output = generator_model[0].forward(generator_input_data_list, is_training=True)
@@ -477,7 +485,7 @@ if __name__=="__main__":
     hidden_size   =  800
     lr=1e-4
 
-    model_name = 'LSTM_GAN_HIDDEN_FF' \
+    model_name = 'LSTM_GAN_HIDDEN_FF(TRUNC_DEEP)' \
                 + '_FEATURE{}'.format(int(feature_size)) \
                 + '_HIDDEN{}'.format(int(hidden_size)) \
 
@@ -487,13 +495,13 @@ if __name__=="__main__":
 
     # discriminator model
     discriminator_feature_model = set_discriminator_feature_model(hidden_size=hidden_size,
-                                                                  feature_size=256)
-    discriminator_output_model = set_discriminator_output_model(feature_size=256)
+                                                                  feature_size=200)
+    discriminator_output_model = set_discriminator_output_model(feature_size=200)
 
     # set optimizer
     tf_generator_optimizer      = RmsProp(learning_rate=0.001).update_params
     gan_generator_optimizer     = RmsProp(learning_rate=0.001).update_params
-    gan_discriminator_optimizer = RmsProp(learning_rate=0.0001).update_params
+    gan_discriminator_optimizer = RmsProp(learning_rate=0.001).update_params
 
 
     train_model(feature_size=feature_size,

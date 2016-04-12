@@ -35,13 +35,14 @@ def set_tf_update_function(generator_rnn_model,
     input_sequence  = tensor.tensor3(name='input_sequence',
                                      dtype=floatX)
     target_sequence  = tensor.tensor3(name='target_sequence',
-                                    dtype=floatX)
+                                      dtype=floatX)
     # set generator input data list
     generator_input_data_list = [input_sequence,]
 
     # get generator output data
     generator_output = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)
     generator_sample = generator_output[0]
+    generator_random = generator_output[-1]
 
     # get square error
     square_error = tensor.sqr(target_sequence-generator_sample).sum(axis=2)
@@ -70,7 +71,7 @@ def set_tf_update_function(generator_rnn_model,
     # set tf update function
     tf_updates_function = theano.function(inputs=tf_updates_inputs,
                                           outputs=tf_updates_outputs,
-                                          updates=tf_updates_dict,
+                                          updates=merge_dicts([tf_updates_dict, generator_random]),
                                           on_unused_input='ignore')
 
     return tf_updates_function
@@ -88,6 +89,7 @@ def set_evaluation_function(generator_rnn_model):
     # get generator output data
     generator_output = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)
     generator_sample = generator_output[0]
+    generator_random = generator_output[-1]
 
     # get square error
     square_error = tensor.sqr(target_sequence-generator_sample).sum(axis=2)
@@ -103,6 +105,7 @@ def set_evaluation_function(generator_rnn_model):
     # set evaluation function
     evaluation_function = theano.function(inputs=evaluation_inputs,
                                           outputs=evaluation_outputs,
+                                          updates=generator_random,
                                           on_unused_input='ignore')
 
     return evaluation_function
@@ -144,9 +147,6 @@ def train_model(feature_size,
                 num_epochs,
                 model_name):
 
-    print 'COMPILING SAMPLING FUNCTION '
-    sample_generator = set_sample_function(generator_rnn_model=generator_rnn_model)
-
     print 'COMPILING TF UPDATE FUNCTION '
     tf_updater = set_tf_update_function(generator_rnn_model=generator_rnn_model,
                                         generator_optimizer=generator_tf_optimizer,
@@ -157,7 +157,8 @@ def train_model(feature_size,
     evaluator = set_evaluation_function(generator_rnn_model=generator_rnn_model)
 
     # sample generator
-
+    print 'COMPILING SAMPLING FUNCTION '
+    sample_generator = set_sample_function(generator_rnn_model=generator_rnn_model)
 
     print 'READ RAW WAV DATA'
     _, train_raw_data = wavfile.read('/data/lisatmp4/taesup/data/YouTubeAudio/XqaJ2Ol5cC4.wav')
@@ -189,6 +190,7 @@ def train_model(feature_size,
 
 
     print 'NUM OF VALID BATCHES : ', num_valid_sequences/batch_size
+    best_valid = 10000.
 
     print 'START TRAINING'
     # for each epoch
@@ -268,7 +270,11 @@ def train_model(feature_size,
 
 
                 tf_valid_mse_list.append(tf_valid_mse/valid_batch_count)
+                print '----------------------------------------------------------'
                 print 'epoch {}, batch_cnt {} => TF  valid mse cost  {}'.format(e, train_batch_count, tf_valid_mse_list[-1])
+
+                if best_valid>tf_valid_mse_list[-1]:
+                    best_valid = tf_valid_mse_list[-1]
 
             if train_batch_count%1000==0:
                 numpy.save(file=model_name+'tf_train_mse',
@@ -291,7 +297,8 @@ def train_model(feature_size,
                 sample_data = sample_data.astype(numpy.int16)
                 save_wavfile(sample_data, model_name+'_sample')
 
-                save_model_params(generator_rnn_model, model_name+'_model.pkl')
+                if best_valid==tf_valid_mse_list[-1]:
+                    save_model_params(generator_rnn_model, model_name+'_model.pkl')
 
 if __name__=="__main__":
     feature_size  = 1600
@@ -306,7 +313,7 @@ if __name__=="__main__":
     generator_rnn_model    = set_generator_rnn_model(input_size=feature_size,
                                                      hidden_size=hidden_size)
     # set optimizer
-    tf_generator_optimizer      = RmsProp(learning_rate=0.001).update_params
+    tf_generator_optimizer = RmsProp(learning_rate=0.001).update_params
 
     train_model(feature_size=feature_size,
                 hidden_size=hidden_size,

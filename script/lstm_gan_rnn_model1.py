@@ -65,6 +65,7 @@ def set_gan_update_function(generator_rnn_model,
     generator_output = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)
     generator_sample = generator_output[0]
     generator_hidden = generator_output[1]
+    generator_random = generator_output[-1]
 
     positive_sequence = tensor.concatenate([target_sequence, generator_hidden], axis=2)
     positive_hidden   = discriminator_rnn_model[0].forward([positive_sequence, ], is_training=True)[0]
@@ -130,7 +131,8 @@ def set_gan_update_function(generator_rnn_model,
     gan_updates_function = theano.function(inputs=gan_updates_inputs,
                                            outputs=gan_updates_outputs,
                                            updates=merge_dicts([generator_updates_dict,
-                                                                discriminator_updates_dict]),
+                                                                discriminator_updates_dict,
+                                                                generator_random]),
                                            on_unused_input='ignore')
 
     return gan_updates_function
@@ -151,6 +153,7 @@ def set_tf_update_function(generator_rnn_model,
     # get generator output data
     generator_output = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)
     output_sequence  = generator_output[0]
+    generator_random = generator_output[-1]
 
     # get square error
     square_error = tensor.sqr(target_sequence-output_sequence).sum(axis=2)
@@ -179,7 +182,8 @@ def set_tf_update_function(generator_rnn_model,
     # set tf update function
     tf_updates_function = theano.function(inputs=tf_updates_inputs,
                                           outputs=tf_updates_outputs,
-                                          updates=tf_updates_dict,
+                                          updates=merge_dicts([tf_updates_dict,
+                                                              generator_random]),
                                           on_unused_input='ignore')
 
     return tf_updates_function
@@ -197,6 +201,7 @@ def set_evaluation_function(generator_rnn_model):
     # get generator output data
     generator_output = generator_rnn_model[0].forward(generator_input_data_list, is_training=True)
     generator_sample = generator_output[0]
+    generator_random = generator_output[-1]
 
     # get square error
     square_error = tensor.sqr(target_sequence-generator_sample).sum(axis=2)
@@ -212,6 +217,7 @@ def set_evaluation_function(generator_rnn_model):
     # set evaluation function
     evaluation_function = theano.function(inputs=evaluation_inputs,
                                           outputs=evaluation_outputs,
+                                          updates=generator_random,
                                           on_unused_input='ignore')
 
     return evaluation_function
@@ -310,6 +316,7 @@ def train_model(feature_size,
 
 
     print 'NUM OF VALID BATCHES : ', num_valid_sequences/batch_size
+    best_valid = 10000.
 
     print 'START TRAINING'
     # for each epoch
@@ -427,7 +434,11 @@ def train_model(feature_size,
 
 
                 tf_valid_mse_list.append(tf_valid_mse/valid_batch_count)
+                print '----------------------------------------------------------'
                 print 'epoch {}, batch_cnt {} => TF  valid mse cost  {}'.format(e, train_batch_count, tf_valid_mse_list[-1])
+
+                if best_valid>tf_valid_mse_list[-1]:
+                    best_valid = tf_valid_mse_list[-1]
 
             if train_batch_count%1000==0:
                 numpy.save(file=model_name+'tf_mse',
@@ -462,7 +473,8 @@ def train_model(feature_size,
                 sample_data = sample_data.astype(numpy.int16)
                 save_wavfile(sample_data, model_name+'_sample')
 
-                save_model_params(generator_rnn_model, model_name+'_model.pkl')
+                if best_valid==tf_valid_mse_list[-1]:
+                    save_model_params(generator_rnn_model+discriminator_rnn_model+discriminator_output_model, model_name+'_model.pkl')
 
 
 if __name__=="__main__":
@@ -470,7 +482,7 @@ if __name__=="__main__":
     hidden_size   =  800
     lr=1e-4
 
-    model_name = 'LSTM_TF_GAN(RNN)_VALID' \
+    model_name = 'LSTM_TF_GAN(RNN_HID_IN)_VALID' \
                 + '_FEATURE{}'.format(int(feature_size)) \
                 + '_HIDDEN{}'.format(int(hidden_size)) \
 

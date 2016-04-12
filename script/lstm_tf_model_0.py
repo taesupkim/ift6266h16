@@ -290,7 +290,7 @@ if __name__=="__main__":
     hidden_size   =  800
     lr=1e-4
 
-    model_name = 'LSTM_TF' \
+    model_name = 'LSTM_TF_VALID' \
                 + '_FEATURE{}'.format(int(feature_size)) \
                 + '_HIDDEN{}'.format(int(hidden_size)) \
 

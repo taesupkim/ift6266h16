@@ -182,7 +182,7 @@ def train_model(feature_size,
     valid_shuffle_idx = np_rng.permutation(num_valid_sequences)
     valid_source_data = valid_source_data[valid_shuffle_idx]
     valid_target_data = valid_target_data[valid_shuffle_idx]
-    valid_seed_data   = valid_source_data[:num_seeds]
+    valid_seed_data   = valid_source_data[:num_seeds][0][:]
     valid_source_data = numpy.swapaxes(valid_source_data, axis1=0, axis2=1)
     valid_target_data = numpy.swapaxes(valid_target_data, axis1=0, axis2=1)
     num_valid_batches = num_valid_sequences/batch_size

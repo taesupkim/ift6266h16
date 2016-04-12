@@ -205,6 +205,7 @@ def train_model(feature_size,
         train_seq_orders   = train_seq_orders[:train_last_seq_idx-train_last_seq_idx%batch_size]
         train_seq_orders   = train_seq_orders.reshape((-1, batch_size))
 
+        print 'NUM OF TRAIN BATCHES : ', train_seq_orders.shape[0]
         # for each batch
         for batch_idx, batch_info in enumerate(train_seq_orders):
             # source data
@@ -245,7 +246,7 @@ def train_model(feature_size,
                     end_idx   = batch_size*(valid_idx+1)
                     evaluation_outputs = evaluator(valid_source_data[:][start_idx:end_idx][:],
                                                    valid_target_data[:][start_idx:end_idx][:])
-                    tf_valid_mse += evaluation_outputs[0]
+                    tf_valid_mse += evaluation_outputs[0].mean()
                     valid_batch_count += 1
 
                     if valid_idx==0:

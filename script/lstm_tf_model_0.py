@@ -123,6 +123,7 @@ def set_sample_function(generator_rnn_model):
     # get generator output data
     generator_output = generator_rnn_model[0].loop_forward(generator_input_data_list)
     generator_sample = generator_output[0]
+    generator_random = generator_output[-1]
 
     # input data
     sample_function_inputs  = [seed_input_data,
@@ -131,6 +132,7 @@ def set_sample_function(generator_rnn_model):
 
     sample_function = theano.function(inputs=sample_function_inputs,
                                       outputs=sample_function_outputs,
+                                      updates=generator_random,
                                       on_unused_input='ignore')
     return sample_function
 

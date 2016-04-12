@@ -6,7 +6,8 @@ from data.window import Window
 from util.utils import save_wavfile
 from layer.activations import Tanh, Logistic, Relu
 from layer.layers import LinearLayer, SingleLoopLstmLayer, SingleLstmLayer
-from layer.layer_utils import get_tensor_output, get_model_updates, get_model_gradients
+from layer.layer_utils import (get_model_updates, get_model_gradients,
+                               save_model_params)
 from optimizer.rmsprop import RmsProp
 from numpy.random import RandomState
 from theano.sandbox.rng_mrg import MRG_RandomStreams
@@ -126,7 +127,7 @@ def set_sample_function(generator_rnn_model):
     # input data
     sample_function_inputs  = [seed_input_data,
                                time_length]
-    sample_function_outputs = [generator_sample]
+    sample_function_outputs = [generator_sample,]
 
     sample_function = theano.function(inputs=sample_function_inputs,
                                       outputs=sample_function_outputs,
@@ -141,6 +142,9 @@ def train_model(feature_size,
                 num_epochs,
                 model_name):
 
+    print 'COMPILING SAMPLING FUNCTION '
+    sample_generator = set_sample_function(generator_rnn_model=generator_rnn_model)
+
     print 'COMPILING TF UPDATE FUNCTION '
     tf_updater = set_tf_update_function(generator_rnn_model=generator_rnn_model,
                                         generator_optimizer=generator_tf_optimizer,
@@ -151,8 +155,7 @@ def train_model(feature_size,
     evaluator = set_evaluation_function(generator_rnn_model=generator_rnn_model)
 
     # sample generator
-    print 'COMPILING SAMPLING FUNCTION '
-    sample_generator = set_sample_function(generator_rnn_model=generator_rnn_model)
+
 
     print 'READ RAW WAV DATA'
     _, train_raw_data = wavfile.read('/data/lisatmp4/taesup/data/YouTubeAudio/XqaJ2Ol5cC4.wav')
@@ -284,6 +287,8 @@ def train_model(feature_size,
                 sample_data = sample_data*(1.15*2.**13)
                 sample_data = sample_data.astype(numpy.int16)
                 save_wavfile(sample_data, model_name+'_sample')
+
+                save_model_params(generator_rnn_model, model_name+'_model.pkl')
 
 if __name__=="__main__":
     feature_size  = 1600

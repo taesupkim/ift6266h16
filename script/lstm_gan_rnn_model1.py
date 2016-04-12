@@ -67,6 +67,8 @@ def set_gan_update_function(generator_rnn_model,
     generator_hidden = generator_output[1]
     generator_random = generator_output[-1]
 
+    generator_hidden = theano.gradient.disconnected_grad(generator_hidden)
+
     positive_sequence = tensor.concatenate([target_sequence, generator_hidden], axis=2)
     positive_hidden   = discriminator_rnn_model[0].forward([positive_sequence, ], is_training=True)[0]
     positive_score    = get_tensor_output(positive_hidden, discriminator_output_model, is_training=True)

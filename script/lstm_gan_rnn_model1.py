@@ -357,7 +357,7 @@ def train_model(feature_size,
 
 
             # gan update
-            gan_update_output = gan_updater(train_source_data, window_size)
+            gan_update_output = gan_updater(train_source_data, train_target_data)
             generator_gan_cost               = gan_update_output[0].mean()
             discriminator_gan_cost           = gan_update_output[1].mean()
             discriminator_true_score         = gan_update_output[2].mean()

@@ -26,6 +26,7 @@ def set_generator_rnn_model(input_size,
     layers = []
     layers.append(SingleLoopLstmLayer(input_dim=input_size,
                                       hidden_dim=hidden_size,
+                                      init_bias=1.0,
                                       name='generator_rnn_model'))
     return layers
 
@@ -34,6 +35,7 @@ def set_discriminator_rnn_model(input_size,
     layers = []
     layers.append(SingleLstmLayer(input_dim=input_size,
                                   hidden_dim=hidden_size,
+                                  init_bias=1.0,
                                   name='discriminator_rnn_model'))
     return layers
 
@@ -445,6 +447,8 @@ def train_model(feature_size,
             if train_batch_count%1000==0:
                 numpy.save(file=model_name+'tf_mse',
                            arr=numpy.asarray(tf_mse_list))
+                numpy.save(file=model_name+'tf_valid_mse',
+                           arr=numpy.asarray(tf_valid_mse_list))
                 numpy.save(file=model_name+'tf_gen_grad',
                            arr=numpy.asarray(tf_generator_grad_list))
                 numpy.save(file=model_name+'gan_mse',
@@ -497,8 +501,8 @@ if __name__=="__main__":
     discriminator_output_model = set_discriminator_output_model(hidden_size=hidden_size)
 
     # set optimizer
-    tf_generator_optimizer      = RmsProp(learning_rate=0.001).update_params
-    gan_generator_optimizer     = RmsProp(learning_rate=0.001).update_params
+    tf_generator_optimizer      = RmsProp(learning_rate=0.001, momentum=0.1).update_params
+    gan_generator_optimizer     = RmsProp(learning_rate=0.001, momentum=0.1).update_params
     gan_discriminator_optimizer = RmsProp(learning_rate=0.0001).update_params
 
 

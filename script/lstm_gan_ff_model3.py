@@ -5,8 +5,11 @@ from theano import tensor
 from data.window import Window
 from util.utils import save_wavfile
 from layer.activations import Tanh, Logistic, Relu
-from layer.layers import LinearLayer, SingleLstmGanForceLayer, SingleLstmLayer
-from layer.layer_utils import get_tensor_output, get_model_updates, get_model_gradients
+from layer.layers import LinearLayer, SingleLstmGanForceLayer, LinearBatchNormalization
+from layer.layer_utils import (get_tensor_output,
+                               get_model_updates,
+                               get_model_gradients,
+                               save_model_params)
 from optimizer.rmsprop import RmsProp
 from optimizer.adagrad import AdaGrad
 from numpy.random import RandomState
@@ -24,6 +27,8 @@ def set_generator_model(input_size,
     layers = []
     layers.append(SingleLstmGanForceLayer(input_dim=input_size,
                                           hidden_dim=hidden_size,
+                                          init_bias=1.0,
+                                          output_activation=None,
                                           name='generator_model'))
     return layers
 
@@ -35,43 +40,9 @@ def set_discriminator_feature_model(hidden_size,
                               name='discriminator_feature_linear0'))
     layers.append(Relu(name='discriminator_feature_relu0'))
     layers.append(LinearLayer(input_dim=hidden_size/2,
-                              output_dim=hidden_size/4,
-                              name='discriminator_feature_linear1'))
-    layers.append(Relu(name='discriminator_feature_relu1'))
-    layers.append(LinearLayer(input_dim=hidden_size/4,
                               output_dim=feature_size,
                               name='discriminator_feature_linear2'))
     layers.append(Relu(name='discriminator_feature_relu2'))
-    return layers
-
-def set_discriminator_hidden_feature(hidden_size=800,
-                                     hidden_feature_size=200):
-    layers = []
-    layers.append(LinearLayer(input_dim=hidden_size,
-                              output_dim=hidden_size/2,
-                              name='discriminator_hidden_feature_linear0'))
-    layers.append(Relu(name='discriminator_hidden_feature_relu0'))
-    layers.append(LinearLayer(input_dim=hidden_size/2,
-                              output_dim=hidden_feature_size,
-                              name='discriminator_hidden_feature_linear1'))
-    layers.append(Relu(name='discriminator_hidden_feature_relu1'))
-    return layers
-
-def set_discriminator_input_feature(input_size=1600,
-                                    input_feature_size=200):
-    layers = []
-    layers.append(LinearLayer(input_dim=input_size,
-                              output_dim=input_size/2,
-                              name='discriminator_input_feature_linear0'))
-    layers.append(Relu(name='discriminator_input_feature_relu0'))
-    layers.append(LinearLayer(input_dim=input_size/2,
-                              output_dim=input_size/4,
-                              name='discriminator_input_feature_linear1'))
-    layers.append(Relu(name='discriminator_input_feature_relu1'))
-    layers.append(LinearLayer(input_dim=input_size/4,
-                              output_dim=input_feature_size,
-                              name='discriminator_input_feature_linear2'))
-    layers.append(Relu(name='discriminator_input_feature_relu2'))
     return layers
 
 def set_discriminator_output_model(feature_size):
@@ -81,10 +52,6 @@ def set_discriminator_output_model(feature_size):
                               name='discriminator_output_linear0'))
     layers.append(Relu(name='discriminator_output_relu0'))
     layers.append(LinearLayer(input_dim=feature_size,
-                              output_dim=feature_size/2,
-                              name='discriminator_output_linear1'))
-    layers.append(Relu(name='discriminator_output_relu1'))
-    layers.append(LinearLayer(input_dim=feature_size/2,
                               output_dim=1,
                               name='discriminator_output_linear2'))
     layers.append(Logistic(name='discriminator_output_linear2'))
@@ -103,45 +70,57 @@ def set_gan_update_function(generator_model,
                                      dtype=floatX)
     target_sequence  = tensor.tensor3(name='target_sequence',
                                       dtype=floatX)
+
     # set generator input data list
-    generator_input_data_list = [input_sequence, 1]
+    generator_input_data_list = [input_sequence,
+                                 1]
 
     # get generator output data
-    generator_output = generator_model[0].forward(generator_input_data_list, is_training=True)
+    generator_output = generator_model[0].forward(generator_input_data_list,
+                                                  is_training=True)
     output_sequence  = generator_output[0]
     data_hidden      = generator_output[1]
     data_cell        = generator_output[2]
     model_hidden     = generator_output[3]
     model_cell       = generator_output[4]
+    generator_random = generator_output[-1]
 
+    # get conditional hidden
     condition_hid    = data_hidden[:-1]
     condition_hid    = theano.gradient.disconnected_grad(condition_hid)
     condition_feature = get_tensor_output(condition_hid,
                                           discriminator_feature_model,
                                           is_training=True)
 
+    # get positive phase hidden
     positive_hid     = data_hidden[1:]
     positive_feature = get_tensor_output(positive_hid,
                                          discriminator_feature_model,
                                          is_training=True)
+    # get negative phase hidden
     negative_hid     = model_hidden[1:]
     negative_feature = get_tensor_output(negative_hid,
                                          discriminator_feature_model,
                                          is_training=True)
 
+    # get positive/negative phase pairs
     positive_pair = tensor.concatenate([condition_feature, positive_feature], axis=2)
     negative_pair = tensor.concatenate([condition_feature, negative_feature], axis=2)
 
+    # get positive pair score
     positive_score = get_tensor_output(positive_pair,
                                        discriminator_output_model,
                                        is_training=True)
+    # get negative pair score
     negative_score = get_tensor_output(negative_pair,
                                        discriminator_output_model,
                                        is_training=True)
 
+    # get generator cost (increase negative score)
     generator_gan_cost = tensor.nnet.binary_crossentropy(output=negative_score,
                                                          target=tensor.ones_like(negative_score))
 
+    # get discriminator cost (increase positive score, decrease negative score)
     discriminator_gan_cost = (tensor.nnet.binary_crossentropy(output=positive_score,
                                                               target=tensor.ones_like(positive_score)) +
                               tensor.nnet.binary_crossentropy(output=negative_score,
@@ -154,6 +133,7 @@ def set_gan_update_function(generator_model,
                                                optimizer=generator_optimizer,
                                                use_grad_clip=generator_grad_clipping)
 
+    # get generator gradient norm2
     generator_gradient_dict  = get_model_gradients(generator_model, generator_updates_cost)
     generator_gradient_norm  = 0.
     for grad in generator_gradient_dict:
@@ -169,11 +149,14 @@ def set_gan_update_function(generator_model,
 
     discriminator_gradient_dict  = get_model_gradients(discriminator_feature_model+discriminator_output_model,
                                                        discriminator_updates_cost)
+
+    # get discriminator gradient norm2
     discriminator_gradient_norm  = 0.
     for grad in discriminator_gradient_dict:
         discriminator_gradient_norm += tensor.sum(grad**2)
     discriminator_gradient_norm  = tensor.sqrt(discriminator_gradient_norm)
 
+    # get mean square error
     square_error = tensor.sqr(target_sequence-output_sequence).sum(axis=2)
 
     # set gan update inputs
@@ -192,7 +175,9 @@ def set_gan_update_function(generator_model,
     # set gan update function
     gan_updates_function = theano.function(inputs=gan_updates_inputs,
                                            outputs=gan_updates_outputs,
-                                           updates=merge_dicts([generator_updates_dict, discriminator_updates_dict]),
+                                           updates=merge_dicts([generator_updates_dict,
+                                                                discriminator_updates_dict,
+                                                                generator_random]),
                                            on_unused_input='ignore')
 
     return gan_updates_function
@@ -210,8 +195,9 @@ def set_tf_update_function(generator_model,
     generator_input_data_list = [input_sequence,]
 
     # get generator output data
-    output_data_set = generator_model[0].forward(generator_input_data_list, is_training=True)
-    output_sequence = output_data_set[0]
+    generator_output = generator_model[0].forward(generator_input_data_list, is_training=True)
+    output_sequence  = generator_output[0]
+    generator_random = generator_output[-1]
 
     # get square error
     square_error = tensor.sqr(target_sequence-output_sequence).sum(axis=2)
@@ -223,6 +209,8 @@ def set_tf_update_function(generator_model,
                                         optimizer=generator_optimizer)
 
     generator_gradient_dict  = get_model_gradients(generator_model, tf_updates_cost)
+
+    # get generator gradient norm2
     generator_gradient_norm  = 0.
     for grad in generator_gradient_dict:
         generator_gradient_norm += tensor.sum(grad**2)
@@ -239,7 +227,8 @@ def set_tf_update_function(generator_model,
     # set tf update function
     tf_updates_function = theano.function(inputs=tf_updates_inputs,
                                           outputs=tf_updates_outputs,
-                                          updates=tf_updates_dict,
+                                          updates=merge_dicts([tf_updates_dict,
+                                                               generator_random]),
                                           on_unused_input='ignore')
 
     return tf_updates_function
@@ -255,8 +244,9 @@ def set_evaluation_function(generator_model):
     generator_input_data_list = [input_sequence,]
 
     # get generator output data
-    output_data_set = generator_model[0].forward(generator_input_data_list, is_training=True)
-    output_sequence = output_data_set[0]
+    generator_output = generator_model[0].forward(generator_input_data_list, is_training=True)
+    output_sequence  = generator_output[0]
+    generator_random = generator_output[-1]
 
     # get square error
     square_error = tensor.sqr(target_sequence-output_sequence).sum(axis=2)
@@ -271,6 +261,7 @@ def set_evaluation_function(generator_model):
     # set evaluation function
     evaluation_function = theano.function(inputs=evaluation_inputs,
                                           outputs=evaluation_outputs,
+                                          updates=generator_random,
                                           on_unused_input='ignore')
 
     return evaluation_function
@@ -278,39 +269,30 @@ def set_evaluation_function(generator_model):
 
 def set_sample_function(generator_model):
 
-    # init input data (num_samples *input_dims)
-    init_input_data = tensor.matrix(name='init_input_data',
+    # seed input data (num_samples *input_dims)
+    seed_input_data = tensor.matrix(name='seed_input_data',
                                     dtype=floatX)
 
-    # init hidden data (num_samples *input_dims)
-    init_hidden_data = tensor.matrix(name='init_hidden_data',
-                                     dtype=floatX)
-
-    # init cell data (num_samples *input_dims)
-    init_cell_data = tensor.matrix(name='init_cell_data',
-                                   dtype=floatX)
+    time_length = tensor.scalar(name='time_length',
+                                dtype='int32')
 
     # set generator input data list
-    generator_input_data_list = [init_input_data,
-                                 init_hidden_data,
-                                 init_cell_data]
+    generator_input_data_list = [seed_input_data,
+                                 time_length]
 
     # get generator output data
-    output_data_set = generator_model[0].forward(generator_input_data_list, is_training=False)
-    sample_data = output_data_set[0]
-    hidden_data = output_data_set[1]
-    cell_data   = output_data_set[2]
+    generator_output = generator_model[0].forward(generator_input_data_list, is_training=False)
+    generator_sample = generator_output[0]
+    generator_random = generator_output[-1]
 
     # input data
-    sample_function_inputs  = [init_input_data,
-                               init_hidden_data,
-                               init_cell_data]
-    sample_function_outputs = [sample_data,
-                               hidden_data,
-                               cell_data]
+    sample_function_inputs  = [seed_input_data,
+                               time_length]
+    sample_function_outputs = [generator_sample,]
 
     sample_function = theano.function(inputs=sample_function_inputs,
                                       outputs=sample_function_outputs,
+                                      updates=generator_random,
                                       on_unused_input='ignore')
     return sample_function
 
@@ -340,6 +322,11 @@ def train_model(feature_size,
     tf_updater = set_tf_update_function(generator_model=generator_model,
                                         generator_optimizer=generator_tf_optimizer,
                                         generator_grad_clipping=.0)
+
+    # evaluator
+    print 'COMPILING EVALUATION FUNCTION '
+    evaluator = set_evaluation_function(generator_model=generator_model)
+
     # sample generator
     print 'COMPILING SAMPLING FUNCTION '
     sample_generator = set_sample_function(generator_model=generator_model)
@@ -356,15 +343,25 @@ def train_model(feature_size,
     num_valid_total_steps = valid_raw_data.shape[0]
     batch_size      = 64
 
-    num_samples      = 10
-    last_seq_idx     = num_valid_total_steps-feature_size
-    valid_seq_orders = np_rng.permutation(last_seq_idx)
-    valid_seq_orders = valid_seq_orders[:last_seq_idx-last_seq_idx%num_samples]
-    valid_seq_orders = valid_seq_orders.reshape((-1, num_samples))
-    valid_seq_orders = valid_seq_orders[0]
-    valid_source_idx  = valid_seq_orders.reshape((num_samples, 1)) + numpy.repeat(numpy.arange(feature_size).reshape((1, feature_size)), num_samples, axis=0)
-    valid_source_data = valid_raw_data[valid_source_idx]
-    valid_source_data = valid_source_data.reshape((num_samples, feature_size))
+    num_valid_sequences = num_valid_total_steps/(feature_size*init_window_size)-1
+    valid_source_data = valid_raw_data[:num_valid_sequences*(feature_size*init_window_size)]
+    valid_source_data = valid_source_data.reshape((num_valid_sequences, init_window_size, feature_size))
+    valid_target_data = valid_raw_data[feature_size:feature_size+num_valid_sequences*(feature_size*init_window_size)]
+    valid_target_data = valid_target_data.reshape((num_valid_sequences, init_window_size, feature_size))
+
+    valid_raw_data = None
+    num_seeds = 10
+    valid_shuffle_idx = np_rng.permutation(num_valid_sequences)
+    valid_source_data = valid_source_data[valid_shuffle_idx]
+    valid_target_data = valid_target_data[valid_shuffle_idx]
+    valid_seed_data   = valid_source_data[:num_seeds][0][:]
+    valid_source_data = numpy.swapaxes(valid_source_data, axis1=0, axis2=1)
+    valid_target_data = numpy.swapaxes(valid_target_data, axis1=0, axis2=1)
+    num_valid_batches = num_valid_sequences/batch_size
+
+
+    print 'NUM OF VALID BATCHES : ', num_valid_sequences/batch_size
+    best_valid = 10000.
 
     print 'START TRAINING'
     # for each epoch
@@ -379,6 +376,8 @@ def train_model(feature_size,
     gan_false_score_list        = []
     gan_mse_list                = []
 
+    valid_mse_list = []
+
     train_batch_count = 0
     for e in xrange(num_epochs):
         window_size      = init_window_size + 5*e
@@ -388,6 +387,7 @@ def train_model(feature_size,
         train_seq_orders = train_seq_orders[:last_seq_idx-last_seq_idx%batch_size]
         train_seq_orders = train_seq_orders.reshape((-1, batch_size))
 
+        print 'NUM OF TRAIN BATCHES : ', train_seq_orders.shape[0]
         # for each batch
         for batch_idx, batch_info in enumerate(train_seq_orders):
             # source data
@@ -451,8 +451,43 @@ def train_model(feature_size,
                 print '----------------------------------------------------------'
                 print 'epoch {}, batch_cnt {} => TF  generator grad norm {}'.format(e, train_batch_count, tf_generator_grad_list[-1])
 
-
             if train_batch_count%100==0:
+                tf_valid_mse = 0.0
+                valid_batch_count = 0
+                for valid_idx in xrange(num_valid_batches):
+                    start_idx = batch_size*valid_idx
+                    end_idx   = batch_size*(valid_idx+1)
+                    evaluation_outputs = evaluator(valid_source_data[:][start_idx:end_idx][:],
+                                                   valid_target_data[:][start_idx:end_idx][:])
+                    tf_valid_mse += evaluation_outputs[0].mean()
+                    valid_batch_count += 1
+
+                    if valid_idx==0:
+                        recon_data = evaluation_outputs[1]
+                        recon_data = numpy.swapaxes(recon_data, axis1=0, axis2=1)
+                        recon_data = recon_data[:10]
+                        recon_data = recon_data.reshape((10, -1))
+                        recon_data = recon_data*(1.15*2.**13)
+                        recon_data = recon_data.astype(numpy.int16)
+                        save_wavfile(recon_data, model_name+'_recon')
+
+                        orig_data = valid_target_data[:][start_idx:end_idx][:]
+                        orig_data = numpy.swapaxes(orig_data, axis1=0, axis2=1)
+                        orig_data = orig_data[:10]
+                        orig_data = orig_data.reshape((10, -1))
+                        orig_data = orig_data*(1.15*2.**13)
+                        orig_data = orig_data.astype(numpy.int16)
+                        save_wavfile(orig_data, model_name+'_orig')
+
+                valid_mse_list.append(tf_valid_mse/valid_batch_count)
+                print '----------------------------------------------------------'
+                print 'epoch {}, batch_cnt {} => TF  valid mse cost  {}'.format(e, train_batch_count, valid_mse_list[-1])
+
+                if best_valid>valid_mse_list[-1]:
+                    best_valid = valid_mse_list[-1]
+
+
+            if train_batch_count%500==0:
                 numpy.save(file=model_name+'tf_mse',
                            arr=numpy.asarray(tf_mse_list))
                 numpy.save(file=model_name+'tf_gen_grad',
@@ -471,29 +506,26 @@ def train_model(feature_size,
                            arr=numpy.asarray(gan_generator_grad_list))
                 numpy.save(file=model_name+'gan_disc_grad',
                            arr=numpy.asarray(gan_discriminator_grad_list))
+                numpy.save(file=model_name+'valid_mse',
+                           arr=numpy.asarray(valid_mse_list))
 
-
-            if train_batch_count%100==0:
-                num_sec = 10
+                num_sec = 100
                 sampling_length = num_sec*sampling_rate/feature_size
+                seed_input_data = valid_seed_data
 
-                curr_input_data  = valid_source_data
-                prev_hidden_data = np_rng.normal(size=(num_samples, hidden_size)).astype(floatX)
-                prev_hidden_data = numpy.tanh(prev_hidden_data)
-                prev_cell_data   = np_rng.normal(size=(num_samples, hidden_size)).astype(floatX)
-                output_data      = numpy.zeros(shape=(sampling_length, num_samples, feature_size))
-                for s in xrange(sampling_length):
-                    generator_input = [curr_input_data,
-                                       prev_hidden_data,
-                                       prev_cell_data]
+                [generated_sequence, ] = sample_generator(seed_input_data,
+                                                          sampling_length)
 
-                    [curr_input_data, prev_hidden_data, prev_cell_data] = sample_generator(*generator_input)
-                    output_data[s] = curr_input_data
-                sample_data = numpy.swapaxes(output_data, axis1=0, axis2=1)
-                sample_data = sample_data.reshape((num_samples, -1))
+                sample_data = numpy.swapaxes(generated_sequence, axis1=0, axis2=1)
+                sample_data = sample_data.reshape((num_seeds, -1))
                 sample_data = sample_data*(1.15*2.**13)
                 sample_data = sample_data.astype(numpy.int16)
                 save_wavfile(sample_data, model_name+'_sample')
+
+                if best_valid==valid_mse_list[-1]:
+                    save_model_params(generator_model, model_name+'_gen_model.pkl')
+                    save_model_params(discriminator_feature_model, model_name+'_disc_feat_model.pkl')
+                    save_model_params(discriminator_output_model, model_name+'_disc_output_model.pkl')
 
 
 if __name__=="__main__":
@@ -501,7 +533,7 @@ if __name__=="__main__":
     hidden_size   =  800
     lr=1e-4
 
-    model_name = 'LSTM_GAN_HIDDEN_FF(TRUNC_DEEP)' \
+    model_name = 'LSTM_GAN_HIDDEN_FF_LINEAR' \
                 + '_FEATURE{}'.format(int(feature_size)) \
                 + '_HIDDEN{}'.format(int(hidden_size)) \
 
@@ -511,13 +543,13 @@ if __name__=="__main__":
 
     # discriminator model
     discriminator_feature_model = set_discriminator_feature_model(hidden_size=hidden_size,
-                                                                  feature_size=200)
-    discriminator_output_model = set_discriminator_output_model(feature_size=200)
+                                                                  feature_size=128)
+    discriminator_output_model = set_discriminator_output_model(feature_size=128)
 
     # set optimizer
-    tf_generator_optimizer      = RmsProp(learning_rate=0.001).update_params
-    gan_generator_optimizer     = RmsProp(learning_rate=0.001).update_params
-    gan_discriminator_optimizer = AdaGrad(learning_rate=0.0001).update_params
+    tf_generator_optimizer      = RmsProp(learning_rate=0.001, momentum=0.9).update_params
+    gan_generator_optimizer     = RmsProp(learning_rate=0.001, momentum=0.9).update_params
+    gan_discriminator_optimizer = RmsProp(learning_rate=0.001, momentum=0.5).update_params
 
 
     train_model(feature_size=feature_size,

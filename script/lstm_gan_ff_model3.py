@@ -256,7 +256,8 @@ def set_evaluation_function(generator_model):
                           target_sequence]
 
     # set evaluation outputs
-    evaluation_outputs = [square_error,]
+    evaluation_outputs = [square_error,
+                          output_sequence]
 
     # set evaluation function
     evaluation_function = theano.function(inputs=evaluation_inputs,
@@ -549,7 +550,7 @@ if __name__=="__main__":
     # set optimizer
     tf_generator_optimizer      = RmsProp(learning_rate=0.001, momentum=0.9).update_params
     gan_generator_optimizer     = RmsProp(learning_rate=0.001, momentum=0.9).update_params
-    gan_discriminator_optimizer = RmsProp(learning_rate=0.001, momentum=0.5).update_params
+    gan_discriminator_optimizer = RmsProp(learning_rate=0.0001, momentum=0.5).update_params
 
 
     train_model(feature_size=feature_size,

@@ -58,7 +58,6 @@ def set_reg_update_function(generator_model,
 
     # get positive phase hidden
     positive_hid     = data_hidden[1:]
-    positive_hid     = theano.gradient.disconnected_grad(positive_hid)
 
     # get negative phase hidden
     negative_hid     = model_hidden[1:]
@@ -416,7 +415,7 @@ if __name__=="__main__":
     hidden_size   =  800
     lr=1e-4
 
-    model_name = 'LSTM_REG(POS_AS_FIX)' \
+    model_name = 'LSTM_REG(POS_AS_NON_FIX)' \
                 + '_FEATURE{}'.format(int(feature_size)) \
                 + '_HIDDEN{}'.format(int(hidden_size)) \
 

@@ -362,7 +362,7 @@ if __name__=="__main__":
                                           hidden_size=hidden_size)
 
     # set optimizer
-    generator_optimizer      = RmsProp(learning_rate=0.001, momentum=0.9).update_params
+    generator_optimizer      = RmsProp(learning_rate=0.01, momentum=0.9).update_params
 
     train_model(feature_size=feature_size,
                 hidden_size=hidden_size,

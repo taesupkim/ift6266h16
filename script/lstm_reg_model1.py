@@ -295,7 +295,7 @@ def train_model(feature_size,
                     start_idx = batch_size*valid_idx
                     end_idx   = batch_size*(valid_idx+1)
                     print valid_source_data[:,start_idx:end_idx].shape
-                    print valid_target_data[:,start_idx:end_idx.shape
+                    print valid_target_data[:,start_idx:end_idx].shape
 
                     evaluation_outputs = evaluation_function(valid_source_data[:,start_idx:end_idx],
                                                              valid_target_data[:,start_idx:end_idx])

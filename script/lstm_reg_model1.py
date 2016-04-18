@@ -294,11 +294,11 @@ def train_model(feature_size,
                 for valid_idx in xrange(num_valid_batches):
                     start_idx = batch_size*valid_idx
                     end_idx   = batch_size*(valid_idx+1)
-                    print valid_source_data[:][start_idx:end_idx][:].shape
-                    print valid_target_data[:][start_idx:end_idx][:].shape
+                    print valid_source_data[:,start_idx:end_idx].shape
+                    print valid_target_data[:,start_idx:end_idx.shape
 
-                    evaluation_outputs = evaluation_function(valid_source_data[:][start_idx:end_idx][:],
-                                                             valid_target_data[:][start_idx:end_idx][:])
+                    evaluation_outputs = evaluation_function(valid_source_data[:,start_idx:end_idx],
+                                                             valid_target_data[:,start_idx:end_idx])
                     tf_valid_mse += evaluation_outputs[0].mean()
                     valid_batch_count += 1
 

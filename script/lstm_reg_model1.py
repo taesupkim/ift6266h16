@@ -210,9 +210,6 @@ def train_model(feature_size,
     valid_target_data = valid_raw_data[feature_size:feature_size+num_valid_sequences*(feature_size*init_window_size)]
     valid_target_data = valid_target_data.reshape((num_valid_sequences, init_window_size, feature_size))
 
-    print valid_source_data.shape
-    print valid_target_data.shape
-    raw_input()
 
     valid_raw_data = None
     num_seeds = 10
@@ -223,6 +220,10 @@ def train_model(feature_size,
     valid_source_data = numpy.swapaxes(valid_source_data, axis1=0, axis2=1)
     valid_target_data = numpy.swapaxes(valid_target_data, axis1=0, axis2=1)
     num_valid_batches = num_valid_sequences/batch_size
+
+    print valid_source_data.shape
+    print valid_target_data.shape
+    raw_input()
 
 
     print 'NUM OF VALID BATCHES : ', num_valid_sequences/batch_size

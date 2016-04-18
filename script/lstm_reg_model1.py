@@ -218,7 +218,7 @@ def train_model(feature_size,
     valid_seed_data   = valid_source_data[:num_seeds][0][:]
     valid_source_data = numpy.swapaxes(valid_source_data, axis1=0, axis2=1)
     valid_target_data = numpy.swapaxes(valid_target_data, axis1=0, axis2=1)
-    num_valid_batches = num_valid_sequences/batch_size
+    num_valid_batches = num_valid_sequences/batch_size-1
 
 
     print 'NUM OF VALID BATCHES : ', num_valid_sequences/batch_size

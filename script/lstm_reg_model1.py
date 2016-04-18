@@ -221,11 +221,6 @@ def train_model(feature_size,
     valid_target_data = numpy.swapaxes(valid_target_data, axis1=0, axis2=1)
     num_valid_batches = num_valid_sequences/batch_size
 
-    print valid_source_data.shape
-    print valid_target_data.shape
-    raw_input()
-
-
     print 'NUM OF VALID BATCHES : ', num_valid_sequences/batch_size
     best_valid = 10000.
 
@@ -294,8 +289,6 @@ def train_model(feature_size,
                 for valid_idx in xrange(num_valid_batches):
                     start_idx = batch_size*valid_idx
                     end_idx   = batch_size*(valid_idx+1)
-                    print valid_source_data[:,start_idx:end_idx].shape
-                    print valid_target_data[:,start_idx:end_idx].shape
 
                     evaluation_outputs = evaluation_function(valid_source_data[:,start_idx:end_idx],
                                                              valid_target_data[:,start_idx:end_idx])

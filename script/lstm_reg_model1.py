@@ -349,7 +349,7 @@ def train_model(feature_size,
 
 
 if __name__=="__main__":
-    feature_size  =  32
+    feature_size  =  16
     hidden_size   = 160
 
     model_name = 'LSTM_REGULARIZER_LAMBDA_SHORT05_32_160' \

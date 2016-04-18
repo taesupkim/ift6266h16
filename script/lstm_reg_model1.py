@@ -2,7 +2,7 @@ __author__ = 'KimTS'
 import theano
 import numpy
 from theano import tensor
-from data.window import Window
+from time import time
 from util.utils import save_wavfile
 from layer.activations import Tanh, Logistic, Relu
 from layer.layers import LinearLayer, SingleLstmGanForceLayer, LinearBatchNormalization
@@ -28,27 +28,27 @@ def set_generator_model(input_size,
     layers.append(SingleLstmGanForceLayer(input_dim=input_size,
                                           hidden_dim=hidden_size,
                                           init_bias=1.0,
+                                          output_activation='tanh',
+                                          disconnect_sample=True,
                                           name='generator_model'))
     return layers
 
-
-def set_reg_update_function(generator_model,
-                            generator_optimizer,
-                            generator_grad_clipping):
-
+def set_updater_function(generator_model,
+                         generator_optimizer,
+                         generator_grad_clipping):
     # input sequence data (time_length * num_samples * input_dims)
     input_sequence  = tensor.tensor3(name='input_sequence',
                                      dtype=floatX)
     target_sequence  = tensor.tensor3(name='target_sequence',
                                       dtype=floatX)
+    lambda_regularizer = tensor.scalar(name='lambda_regularizer',
+                                       dtype=floatX)
 
     # set generator input data list
-    generator_input_data_list = [input_sequence,
-                                 1]
+    generator_input_data_list = [input_sequence,]
 
     # get generator output data
-    generator_output = generator_model[0].forward(generator_input_data_list,
-                                                  is_training=True)
+    generator_output = generator_model[0].forward(generator_input_data_list, is_training=True)
     output_sequence  = generator_output[0]
     data_hidden      = generator_output[1]
     data_cell        = generator_output[2]
@@ -56,103 +56,51 @@ def set_reg_update_function(generator_model,
     model_cell       = generator_output[4]
     generator_random = generator_output[-1]
 
+    # get square error
+    sample_cost = tensor.sqr(target_sequence-output_sequence).sum(axis=2)
+
     # get positive phase hidden
-    positive_hid     = data_hidden[1:]
+    positive_hid = data_hidden[1:]
 
     # get negative phase hidden
-    negative_hid     = model_hidden[1:]
+    negative_hid = model_hidden[1:]
 
     # get phase diff cost
-    phase_diff = tensor.sqr(positive_hid-negative_hid).sum(axis=2)
+    regularizer_cost = tensor.sqr(positive_hid-negative_hid).sum(axis=2)
 
     # set generator update
-    generator_updates_cost = phase_diff.mean()
-    generator_updates_dict = get_model_updates(layers=generator_model,
-                                               cost=generator_updates_cost,
-                                               optimizer=generator_optimizer,
-                                               use_grad_clip=generator_grad_clipping)
+    updater_cost = sample_cost.mean() + regularizer_cost.mean()*lambda_regularizer
+    updater_dict = get_model_updates(layers=generator_model,
+                                     cost=updater_cost,
+                                     optimizer=generator_optimizer)
 
     # get generator gradient norm2
-    generator_gradient_dict  = get_model_gradients(generator_model, generator_updates_cost)
+    generator_gradient_dict  = get_model_gradients(generator_model, updater_cost)
     generator_gradient_norm  = 0.
     for grad in generator_gradient_dict:
         generator_gradient_norm += tensor.sum(grad**2)
     generator_gradient_norm  = tensor.sqrt(generator_gradient_norm)
 
-    # get mean square error
-    square_error = tensor.sqr(target_sequence-output_sequence).sum(axis=2)
+    # set updater inputs
+    updater_inputs  = [input_sequence,
+                       target_sequence,
+                       lambda_regularizer]
 
-    # set reg update inputs
-    reg_updates_inputs  = [input_sequence,
-                           target_sequence]
+    # set updater outputs
+    updater_outputs = [sample_cost,
+                       regularizer_cost,
+                       generator_gradient_norm,]
 
-    # set reg update outputs
-    reg_updates_outputs = [phase_diff,
-                           square_error,
-                           generator_gradient_norm,]
+    # set updater function
+    updater_function = theano.function(inputs=updater_inputs,
+                                       outputs=updater_outputs,
+                                       updates=merge_dicts([updater_dict,
+                                                            generator_random]),
+                                       on_unused_input='ignore')
 
-    # set reg update function
-    reg_updates_function = theano.function(inputs=reg_updates_inputs,
-                                           outputs=reg_updates_outputs,
-                                           updates=merge_dicts([generator_updates_dict,
-                                                                generator_random]),
-                                           on_unused_input='ignore')
-
-    return reg_updates_function
-
-def set_tf_update_function(generator_model,
-                           generator_optimizer,
-                           generator_grad_clipping):
-
-    # input sequence data (time_length * num_samples * input_dims)
-    input_sequence  = tensor.tensor3(name='input_sequence',
-                                     dtype=floatX)
-    target_sequence  = tensor.tensor3(name='target_sequence',
-                                      dtype=floatX)
-    # set generator input data list
-    generator_input_data_list = [input_sequence,]
-
-    # get generator output data
-    generator_output = generator_model[0].forward(generator_input_data_list, is_training=True)
-    output_sequence  = generator_output[0]
-    generator_random = generator_output[-1]
-
-    # get square error
-    square_error = tensor.sqr(target_sequence-output_sequence).sum(axis=2)
-
-    # set generator update
-    tf_updates_cost = square_error.mean()
-    tf_updates_dict = get_model_updates(layers=generator_model,
-                                        cost=tf_updates_cost,
-                                        optimizer=generator_optimizer)
-
-    generator_gradient_dict  = get_model_gradients(generator_model, tf_updates_cost)
-
-    # get generator gradient norm2
-    generator_gradient_norm  = 0.
-    for grad in generator_gradient_dict:
-        generator_gradient_norm += tensor.sum(grad**2)
-    generator_gradient_norm  = tensor.sqrt(generator_gradient_norm)
-
-    # set tf update inputs
-    tf_updates_inputs  = [input_sequence,
-                          target_sequence]
-
-    # set tf update outputs
-    tf_updates_outputs = [square_error,
-                          generator_gradient_norm,]
-
-    # set tf update function
-    tf_updates_function = theano.function(inputs=tf_updates_inputs,
-                                          outputs=tf_updates_outputs,
-                                          updates=merge_dicts([tf_updates_dict,
-                                                               generator_random]),
-                                          on_unused_input='ignore')
-
-    return tf_updates_function
+    return updater_function
 
 def set_evaluation_function(generator_model):
-
     # input sequence data (time_length * num_samples * input_dims)
     input_sequence  = tensor.tensor3(name='input_sequence',
                                      dtype=floatX)
@@ -162,19 +110,20 @@ def set_evaluation_function(generator_model):
     generator_input_data_list = [input_sequence,]
 
     # get generator output data
-    generator_output = generator_model[0].forward(generator_input_data_list, is_training=True)
+    generator_output = generator_model[0].forward(generator_input_data_list,
+                                                  is_training=True)
     output_sequence  = generator_output[0]
     generator_random = generator_output[-1]
 
     # get square error
-    square_error = tensor.sqr(target_sequence-output_sequence).sum(axis=2)
+    sample_cost = tensor.sqr(target_sequence-output_sequence).sum(axis=2)
 
     # set evaluation inputs
     evaluation_inputs  = [input_sequence,
                           target_sequence]
 
     # set evaluation outputs
-    evaluation_outputs = [square_error,
+    evaluation_outputs = [sample_cost,
                           output_sequence]
 
     # set evaluation function
@@ -186,8 +135,7 @@ def set_evaluation_function(generator_model):
     return evaluation_function
 
 
-def set_sample_function(generator_model):
-
+def set_sampling_function(generator_model):
     # seed input data (num_samples *input_dims)
     seed_input_data = tensor.matrix(name='seed_input_data',
                                     dtype=floatX)
@@ -200,48 +148,49 @@ def set_sample_function(generator_model):
                                  time_length]
 
     # get generator output data
-    generator_output = generator_model[0].forward(generator_input_data_list, is_training=False)
+    generator_output = generator_model[0].forward(generator_input_data_list,
+                                                  is_training=False)
     generator_sample = generator_output[0]
     generator_random = generator_output[-1]
 
     # input data
-    sample_function_inputs  = [seed_input_data,
-                               time_length]
-    sample_function_outputs = [generator_sample,]
+    sampling_function_inputs  = [seed_input_data,
+                                 time_length]
+    sampling_function_outputs = [generator_sample,]
 
-    sample_function = theano.function(inputs=sample_function_inputs,
-                                      outputs=sample_function_outputs,
-                                      updates=generator_random,
-                                      on_unused_input='ignore')
-    return sample_function
+    sampling_function = theano.function(inputs=sampling_function_inputs,
+                                        outputs=sampling_function_outputs,
+                                        updates=generator_random,
+                                        on_unused_input='ignore')
+    return sampling_function
 
 def train_model(feature_size,
                 hidden_size,
                 init_window_size,
                 generator_model,
-                generator_reg_optimizer,
-                generator_tf_optimizer,
+                generator_optimizer,
                 num_epochs,
                 model_name):
 
-    # generator updater
-    print 'COMPILING REG UPDATE FUNCTION '
-    reg_updater = set_reg_update_function(generator_model=generator_model,
-                                          generator_optimizer=generator_reg_optimizer,
-                                          generator_grad_clipping=.0)
-
-    print 'COMPILING TF UPDATE FUNCTION '
-    tf_updater = set_tf_update_function(generator_model=generator_model,
-                                        generator_optimizer=generator_tf_optimizer,
-                                        generator_grad_clipping=.0)
+    # model updater
+    print 'COMPILING UPDATER FUNCTION '
+    t = time()
+    updater_function = set_updater_function(generator_model=generator_model,
+                                            generator_optimizer=generator_optimizer,
+                                            generator_grad_clipping=.0)
+    print '%.2f SEC '%(time()-t)
 
     # evaluator
     print 'COMPILING EVALUATION FUNCTION '
-    evaluator = set_evaluation_function(generator_model=generator_model)
+    t = time()
+    evaluation_function = set_evaluation_function(generator_model=generator_model)
+    print '%.2f SEC '%(time()-t)
 
     # sample generator
     print 'COMPILING SAMPLING FUNCTION '
-    sample_generator = set_sample_function(generator_model=generator_model)
+    t = time()
+    sampling_function = set_sampling_function(generator_model=generator_model)
+    print '%.2f SEC '%(time()-t)
 
     print 'READ RAW WAV DATA'
     _, train_raw_data = wavfile.read('/data/lisatmp4/taesup/data/YouTubeAudio/XqaJ2Ol5cC4.wav')
@@ -277,14 +226,12 @@ def train_model(feature_size,
 
     print 'START TRAINING'
     # for each epoch
-    tf_mse_list             = []
-    tf_generator_grad_list  = []
+    train_sample_cost_list        = []
+    train_regularizer_cost_list   = []
+    train_gradient_norm_list      = []
+    train_lambda_regularizer_list = []
+    valid_sample_cost_list        = []
 
-    reg_phase_diff_list     = []
-    reg_mse_list            = []
-    reg_generator_grad_list = []
-
-    valid_mse_list = []
 
     train_batch_count = 0
     for e in xrange(num_epochs):
@@ -310,38 +257,31 @@ def train_model(feature_size,
             train_target_data = train_target_data.reshape((batch_size, window_size, feature_size))
             train_target_data = numpy.swapaxes(train_target_data, axis1=0, axis2=1)
 
-            # tf update
-            tf_update_output = tf_updater(train_source_data,
-                                          train_target_data)
-            tf_square_error        = tf_update_output[0].mean()
-            tf_generator_grad_norm = tf_update_output[1]
 
-            # reg update
-            reg_update_output = reg_updater(train_source_data,
-                                            train_target_data)
-
-            reg_phase_diff              = reg_update_output[0].mean()
-            reg_square_error            = reg_update_output[1].mean()
-            reg_generator_gradient_norm = reg_update_output[2]
+            # update model
+            lambda_regularizer = 0.5
+            updater_outputs = updater_function(train_source_data,
+                                               train_target_data,
+                                               lambda_regularizer)
+            train_sample_cost      = updater_outputs[0].mean()
+            train_regularizer_cost = updater_outputs[1].mean()
+            train_gradient_norm    = updater_outputs[2]
 
             train_batch_count += 1
 
-            tf_generator_grad_list.append(tf_generator_grad_norm)
-            tf_mse_list.append(tf_square_error)
-
-            reg_phase_diff_list.append(reg_phase_diff)
-            reg_mse_list.append(reg_square_error)
-            reg_generator_grad_list.append(reg_generator_gradient_norm)
+            train_sample_cost_list.append(train_sample_cost)
+            train_regularizer_cost_list.append(train_regularizer_cost)
+            train_gradient_norm_list.append(train_gradient_norm)
+            train_lambda_regularizer_list.append(lambda_regularizer)
 
             if train_batch_count%10==0:
                 print '============{}_LENGTH{}============'.format(model_name, window_size)
-                print 'epoch {}, batch_cnt {} => TF  generator mse cost  {}'.format(e, train_batch_count, tf_mse_list[-1])
-                print 'epoch {}, batch_cnt {} => REG generator mse cost  {}'.format(e, train_batch_count, reg_mse_list[-1])
+                print 'epoch {}, batch_cnt {} => train sample      cost   {}'.format(e, train_batch_count, train_sample_cost_list[-1])
+                print 'epoch {}, batch_cnt {} => train regularizer cost   {}'.format(e, train_batch_count, train_regularizer_cost_list[-1])
                 print '----------------------------------------------------------'
-                print 'epoch {}, batch_cnt {} => REG phase diff          {}'.format(e, train_batch_count, reg_phase_diff_list[-1])
-                print '----------------------------------------------------------'
-                print 'epoch {}, batch_cnt {} => TF  generator grad norm {}'.format(e, train_batch_count, tf_generator_grad_list[-1])
-                print 'epoch {}, batch_cnt {} => REG generator grad norm {}'.format(e, train_batch_count, reg_generator_grad_list[-1])
+                print 'epoch {}, batch_cnt {} => train gradient    norm   {}'.format(e, train_batch_count, train_gradient_norm_list[-1])
+                print 'epoch {}, batch_cnt {} => train regularizer lambda {}'.format(e, train_batch_count, train_lambda_regularizer_list[-1])
+
 
             if train_batch_count%100==0:
                 tf_valid_mse = 0.0
@@ -349,8 +289,8 @@ def train_model(feature_size,
                 for valid_idx in xrange(num_valid_batches):
                     start_idx = batch_size*valid_idx
                     end_idx   = batch_size*(valid_idx+1)
-                    evaluation_outputs = evaluator(valid_source_data[:][start_idx:end_idx][:],
-                                                   valid_target_data[:][start_idx:end_idx][:])
+                    evaluation_outputs = evaluation_function(valid_source_data[:][start_idx:end_idx][:],
+                                                             valid_target_data[:][start_idx:end_idx][:])
                     tf_valid_mse += evaluation_outputs[0].mean()
                     valid_batch_count += 1
 
@@ -371,34 +311,32 @@ def train_model(feature_size,
                         orig_data = orig_data.astype(numpy.int16)
                         save_wavfile(orig_data, model_name+'_orig')
 
-                valid_mse_list.append(tf_valid_mse/valid_batch_count)
+                valid_sample_cost_list.append(tf_valid_mse/valid_batch_count)
                 print '----------------------------------------------------------'
-                print 'epoch {}, batch_cnt {} => TF  valid mse cost  {}'.format(e, train_batch_count, valid_mse_list[-1])
+                print 'epoch {}, batch_cnt {} => valid sample      cost   {}'.format(e, train_batch_count, valid_sample_cost_list[-1])
 
-                if best_valid>valid_mse_list[-1]:
-                    best_valid = valid_mse_list[-1]
+                if best_valid>valid_sample_cost_list[-1]:
+                    best_valid = valid_sample_cost_list[-1]
 
 
             if train_batch_count%500==0:
-                numpy.save(file=model_name+'tf_mse',
-                           arr=numpy.asarray(tf_mse_list))
-                numpy.save(file=model_name+'tf_gen_grad',
-                           arr=numpy.asarray(tf_generator_grad_list))
-                numpy.save(file=model_name+'reg_mse',
-                           arr=numpy.asarray(reg_mse_list))
-                numpy.save(file=model_name+'reg_phase_diff',
-                           arr=numpy.asarray(reg_phase_diff_list))
-                numpy.save(file=model_name+'reg_gen_grad',
-                           arr=numpy.asarray(reg_generator_grad_list))
-                numpy.save(file=model_name+'valid_mse',
-                           arr=numpy.asarray(valid_mse_list))
+                numpy.save(file=model_name+'_train_sample_cost',
+                           arr=numpy.asarray(train_sample_cost_list))
+                numpy.save(file=model_name+'_train_regularizer_cost',
+                           arr=numpy.asarray(train_regularizer_cost_list))
+                numpy.save(file=model_name+'_train_gradient_norm',
+                           arr=numpy.asarray(train_gradient_norm_list))
+                numpy.save(file=model_name+'_train_lambda_value',
+                           arr=numpy.asarray(train_lambda_regularizer_list))
+                numpy.save(file=model_name+'_valid_sample_cost',
+                           arr=numpy.asarray(valid_sample_cost_list))
 
-                num_sec = 100
+                num_sec = 10
                 sampling_length = num_sec*sampling_rate/feature_size
                 seed_input_data = valid_seed_data
 
-                [generated_sequence, ] = sample_generator(seed_input_data,
-                                                          sampling_length)
+                [generated_sequence, ] = sampling_function(seed_input_data,
+                                                           sampling_length)
 
                 sample_data = numpy.swapaxes(generated_sequence, axis1=0, axis2=1)
                 sample_data = sample_data.reshape((num_seeds, -1))
@@ -406,16 +344,15 @@ def train_model(feature_size,
                 sample_data = sample_data.astype(numpy.int16)
                 save_wavfile(sample_data, model_name+'_sample')
 
-                if best_valid==valid_mse_list[-1]:
-                    save_model_params(generator_model, model_name+'_gen_model.pkl')
+                if best_valid==valid_sample_cost_list[-1]:
+                    save_model_params(generator_model, model_name+'_model.pkl')
 
 
 if __name__=="__main__":
-    feature_size  = 1600
-    hidden_size   =  800
-    lr=1e-4
+    feature_size  =  32
+    hidden_size   = 160
 
-    model_name = 'LSTM_REG(POS_AS_NON_FIX)' \
+    model_name = 'LSTM_REGULARIZER_LAMBDA_SHORT05_32_160' \
                 + '_FEATURE{}'.format(int(feature_size)) \
                 + '_HIDDEN{}'.format(int(hidden_size)) \
 
@@ -424,15 +361,12 @@ if __name__=="__main__":
                                           hidden_size=hidden_size)
 
     # set optimizer
-    tf_generator_optimizer      = RmsProp(learning_rate=0.001, momentum=0.9).update_params
-    reg_generator_optimizer     = RmsProp(learning_rate=0.001, momentum=0.9).update_params
-
+    generator_optimizer      = RmsProp(learning_rate=0.001, momentum=0.9).update_params
 
     train_model(feature_size=feature_size,
                 hidden_size=hidden_size,
                 init_window_size=100,
                 generator_model=generator_model,
-                generator_reg_optimizer=reg_generator_optimizer,
-                generator_tf_optimizer=tf_generator_optimizer,
+                generator_optimizer=generator_optimizer,
                 num_epochs=10,
                 model_name=model_name)

@@ -210,6 +210,10 @@ def train_model(feature_size,
     valid_target_data = valid_raw_data[feature_size:feature_size+num_valid_sequences*(feature_size*init_window_size)]
     valid_target_data = valid_target_data.reshape((num_valid_sequences, init_window_size, feature_size))
 
+    print valid_source_data.shape
+    print valid_target_data.shape
+    raw_input()
+
     valid_raw_data = None
     num_seeds = 10
     valid_shuffle_idx = np_rng.permutation(num_valid_sequences)

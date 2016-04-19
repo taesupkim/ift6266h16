@@ -345,7 +345,7 @@ def train_model(feature_size,
                 save_wavfile(sample_data, model_name+'_sample')
 
                 if best_valid==valid_sample_cost_list[-1]:
-                    save_model_params(generator_model, model_name+'_model.pkl')
+            save_model_params(generator_model, model_name+'_model.pkl')
 
 
 if __name__=="__main__":
@@ -361,7 +361,7 @@ if __name__=="__main__":
                                           hidden_size=hidden_size)
 
     # set optimizer
-    generator_optimizer = RmsProp(learning_rate=0.001, momentum=0.9).update_params
+    generator_optimizer = RmsProp(learning_rate=0.01, momentum=0.9).update_params
 
     train_model(feature_size=feature_size,
                 hidden_size=hidden_size,

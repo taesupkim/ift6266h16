@@ -344,7 +344,7 @@ def train_model(feature_size,
                 sample_data = sample_data.astype(numpy.int16)
                 save_wavfile(sample_data, model_name+'_sample')
 
-                if best_valid==valid_sample_cost_list[-1]:
+                # if best_valid==valid_sample_cost_list[-1]:
             save_model_params(generator_model, model_name+'_model.pkl')
 
 

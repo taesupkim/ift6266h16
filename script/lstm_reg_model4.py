@@ -16,6 +16,7 @@ from numpy.random import RandomState
 from theano.sandbox.rng_mrg import MRG_RandomStreams
 from scipy.io import wavfile
 from utils.utils import merge_dicts
+import cPickle
 theano_rng = MRG_RandomStreams(42)
 np_rng = RandomState(42)
 
@@ -60,16 +61,18 @@ def set_updater_function(generator_model,
     sample_cost = tensor.sqr(target_sequence-output_sequence).sum(axis=2)
 
     # get positive phase hidden
-    positive_hid = data_hidden[1:]
+    positive_hid  = data_hidden[1:]
+    positive_cell = data_cell[1:]
 
     # get negative phase hidden
-    negative_hid = model_hidden[1:]
+    negative_hid  = model_hidden[1:]
+    negative_cell = model_cell[1:]
 
     # get phase diff cost
-    regularizer_cost = tensor.sqr(positive_hid-negative_hid).sum(axis=2)
+    regularizer_cost = tensor.sqr(positive_hid-negative_hid).sum(axis=2) + tensor.sqr(positive_cell-negative_cell).sum(axis=2)
 
     # set generator update
-    updater_cost = sample_cost.mean() #+ regularizer_cost.mean()*lambda_regularizer
+    updater_cost = sample_cost.mean() + regularizer_cost.mean()*lambda_regularizer
     updater_dict = get_model_updates(layers=generator_model,
                                      cost=updater_cost,
                                      optimizer=generator_optimizer)
@@ -346,13 +349,16 @@ def train_model(feature_size,
 
                 if best_valid==valid_sample_cost_list[-1]:
                     save_model_params(generator_model, model_name+'_model.pkl')
-
+            # fp = open(model_name+'_model.pkl', 'rb')
+            # tmp_model_param = cPickle.load(fp)
+            # fp.close()
+            # print tmp_model_param.keys()
 
 if __name__=="__main__":
     feature_size  = 1600
-    hidden_size   =  800
+    hidden_size   = 1600
 
-    model_name = 'LSTM_OFF_REGULARIZER_LAMBDA' \
+    model_name = 'LSTM_REGULARIZER_LAMBDA_ALL' \
                 + '_FEATURE{}'.format(int(feature_size)) \
                 + '_HIDDEN{}'.format(int(hidden_size)) \
 
@@ -361,7 +367,7 @@ if __name__=="__main__":
                                           hidden_size=hidden_size)
 
     # set optimizer
-    generator_optimizer      = RmsProp(learning_rate=0.001, momentum=0.9).update_params
+    generator_optimizer = RmsProp(learning_rate=0.01, momentum=0.9).update_params
 
     train_model(feature_size=feature_size,
                 hidden_size=hidden_size,

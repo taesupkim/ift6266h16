@@ -259,7 +259,7 @@ def train_model(feature_size,
 
 
             # update model
-            lambda_regularizer = 0.5
+            lambda_regularizer = 0.1
             updater_outputs = updater_function(train_source_data,
                                                train_target_data,
                                                lambda_regularizer)
@@ -350,9 +350,9 @@ def train_model(feature_size,
 
 if __name__=="__main__":
     feature_size  = 1600
-    hidden_size   =  800
+    hidden_size   = 1600
 
-    model_name = 'LSTM_REGULARIZER_LAMBDA_05' \
+    model_name = 'LSTM_REGULARIZER_LAMBDA' \
                 + '_FEATURE{}'.format(int(feature_size)) \
                 + '_HIDDEN{}'.format(int(hidden_size)) \
 
@@ -361,7 +361,7 @@ if __name__=="__main__":
                                           hidden_size=hidden_size)
 
     # set optimizer
-    generator_optimizer      = RmsProp(learning_rate=0.001, momentum=0.9).update_params
+    generator_optimizer = RmsProp(learning_rate=0.001, momentum=0.9).update_params
 
     train_model(feature_size=feature_size,
                 hidden_size=hidden_size,

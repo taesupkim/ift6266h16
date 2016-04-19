@@ -16,6 +16,7 @@ from numpy.random import RandomState
 from theano.sandbox.rng_mrg import MRG_RandomStreams
 from scipy.io import wavfile
 from utils.utils import merge_dicts
+import cPickle
 theano_rng = MRG_RandomStreams(42)
 np_rng = RandomState(42)
 
@@ -346,7 +347,10 @@ def train_model(feature_size,
 
                 # if best_valid==valid_sample_cost_list[-1]:
             save_model_params(generator_model, model_name+'_model.pkl')
-
+            fp = open(model_name+'_model.pkl', 'rb')
+            tmp_model_param = cPickle.load(fp)
+            fp.close()
+            print tmp_model_param.keys()
 
 if __name__=="__main__":
     feature_size  = 1600

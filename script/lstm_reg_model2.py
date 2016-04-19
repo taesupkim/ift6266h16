@@ -345,12 +345,12 @@ def train_model(feature_size,
                 sample_data = sample_data.astype(numpy.int16)
                 save_wavfile(sample_data, model_name+'_sample')
 
-                # if best_valid==valid_sample_cost_list[-1]:
-            save_model_params(generator_model, model_name+'_model.pkl')
-            fp = open(model_name+'_model.pkl', 'rb')
-            tmp_model_param = cPickle.load(fp)
-            fp.close()
-            print tmp_model_param.keys()
+                if best_valid==valid_sample_cost_list[-1]:
+                    save_model_params(generator_model, model_name+'_model.pkl')
+            # fp = open(model_name+'_model.pkl', 'rb')
+            # tmp_model_param = cPickle.load(fp)
+            # fp.close()
+            # print tmp_model_param.keys()
 
 if __name__=="__main__":
     feature_size  = 1600
